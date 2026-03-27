@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AEDES AI - Excel Validation Pipeline</title>
+  <title>OPENHEXA AI - Excel Validation Pipeline</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -354,7 +354,11 @@
       margin-left: 4px;
       flex-shrink: 0;
     }
-    .rule-badge svg { width: 10px; height: 10px; }
+
+    .rule-badge svg {
+      width: 10px;
+      height: 10px;
+    }
 
     /* Rule builder panel */
     .rule-builder-panel {
@@ -362,8 +366,15 @@
     }
 
     @keyframes ruleBuilderIn {
-      from { transform: translateY(8px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+      from {
+        transform: translateY(8px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
 
     .rule-operand-box {
@@ -526,12 +537,14 @@
   <div id="guidelinesModal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center"
     onclick="if(event.target===this)closeGuidelinesModal()">
     <div class="modal-panel bg-white rounded-xl shadow-2xl w-[600px] max-h-[85vh] flex flex-col border border-gray-200">
-      <div class="px-5 py-3 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-white rounded-t-xl">
+      <div
+        class="px-5 py-3 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-white rounded-t-xl">
         <div>
           <h3 class="text-sm font-semibold text-gray-800">User Guidelines for AI Analysis</h3>
           <p class="text-[10px] text-gray-500 mt-0.5">Provide instructions to guide Gemini's structure detection</p>
         </div>
-        <button onclick="closeGuidelinesModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+        <button onclick="closeGuidelinesModal()"
+          class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
       </div>
       <div class="flex-1 overflow-y-auto p-5 space-y-4">
         <div>
@@ -543,10 +556,12 @@
 - Columns after column Y contain province-level percentages that must sum to 100%.
 - The primary key column is the budget line label in column B.
 - Years are fixed in module 3, provinces are dynamic in module 8."></textarea>
-          <p class="text-[10px] text-gray-400 mt-1">These instructions take priority over the AI's own heuristics when there is a conflict.</p>
+          <p class="text-[10px] text-gray-400 mt-1">These instructions take priority over the AI's own heuristics when
+            there is a conflict.</p>
         </div>
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <p class="text-xs text-amber-800"><strong>Tip:</strong> Be specific about which rows/columns contain what type of data.
+          <p class="text-xs text-amber-800"><strong>Tip:</strong> Be specific about which rows/columns contain what type
+            of data.
             Mention dynamic vs fixed columns, percentage rules, and required fields.
             The AI uses both a visual rendering and a text dump of the sheet to detect the structure.</p>
         </div>
@@ -558,7 +573,8 @@
           <button onclick="clearGuidelines()"
             class="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-500">Clear</button>
           <button onclick="saveGuidelines()"
-            class="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Save & Close</button>
+            class="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Save &
+            Close</button>
         </div>
       </div>
     </div>
@@ -571,20 +587,27 @@
   <div class="flex min-h-screen">
 
     <!-- Left sidebar: Schema Editor -->
-    <aside id="sidebar" class="sidebar w-[420px] shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+    <aside id="sidebar"
+      class="sidebar w-[420px] shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
       <div
         class="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-pink-50 to-white">
         <div>
           <h2 class="text-sm font-semibold text-gray-800">Schema Template</h2>
-          <p class="text-xs text-gray-500 mt-0.5">schema_validation.json</p>
+          <p id="schemaSubtitle" class="text-xs text-gray-500 mt-0.5">Schema Template</p>
         </div>
         <div class="flex items-center gap-1">
-          <span id="roleBadge" class="px-1.5 py-0.5 text-[9px] rounded-full bg-gray-100 text-gray-500 font-medium">Viewer</span>
-          <button id="schemaSaveBtn" onclick="exportSchema()" class="px-2 py-1 text-xs bg-pink-600 text-white rounded hover:bg-pink-700"
+          <span id="roleBadge"
+            class="px-1.5 py-0.5 text-[9px] rounded-full bg-gray-100 text-gray-500 font-medium">Viewer</span>
+          <button id="schemaSaveBtn" onclick="exportSchema()"
+            class="px-2 py-1 text-xs bg-pink-600 text-white rounded hover:bg-pink-700"
             title="Upload schema to workspace and download locally" style="display:none">Save</button>
-          <button onclick="downloadTemplate()" class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+          <button onclick="downloadTemplate()"
+            class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
             title="Download Excel template file">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
             Template
           </button>
           <button onclick="toggleSidebar()"
@@ -610,7 +633,8 @@
           </button>
         </div>
         <div id="updateTemplateBody" class="hidden px-3 pb-3 space-y-2">
-          <p class="text-[10px] text-gray-400">Admin: select an Excel template + optional AI guidelines to regenerate the validation schema.</p>
+          <p class="text-[10px] text-gray-400">Admin: select an Excel template + optional AI guidelines to regenerate
+            the validation schema.</p>
           <div class="flex items-center gap-2">
             <input type="file" id="templateFileInput" accept=".xlsx,.xls" class="hidden"
               onchange="handleTemplateFileSelect(event)">
@@ -666,13 +690,38 @@
           <div class="space-y-1.5">
             <div>
               <label class="block text-[10px] font-medium text-gray-500 uppercase mb-0.5">Workspace Slug</label>
-              <input type="text" id="cfgWorkspaceSlug" value="mc-aedes-ressources-mapping"
-                class="w-full border border-gray-200 rounded px-2 py-1 text-xs" placeholder="workspace-slug">
+              <input type="text" id="cfgWorkspaceSlug" class="w-full border border-gray-200 rounded px-2 py-1 text-xs"
+                placeholder="auto-detected from URL">
+              <p class="text-[9px] text-gray-400 mt-0.5" id="cfgSlugAutoHint"></p>
             </div>
-            <!-- Auth handled via session cookies (same-origin) -->
+            <div>
+              <label class="block text-[10px] font-medium text-gray-500 uppercase mb-0.5">Dashboard URL</label>
+              <input type="text" id="cfgDashboardUrl"
+                class="w-full border border-gray-200 rounded px-2 py-1 text-[10px] font-mono"
+                placeholder="Leave empty to hide dashboard button">
+            </div>
           </div>
           <details class="text-[10px] text-gray-500">
-            <summary class="cursor-pointer hover:text-gray-700">Webhook URLs</summary>
+            <summary class="cursor-pointer hover:text-gray-700">Post-ingestion pipeline (optional)</summary>
+            <div class="mt-1.5 space-y-1.5">
+              <label class="flex items-center gap-1.5 text-[10px] text-gray-600">
+                <input type="checkbox" id="cfgPostIngestionEnabled"> Enable post-ingestion pipeline
+              </label>
+              <div>
+                <label class="block text-[10px] text-gray-400 mb-0.5">Pipeline code</label>
+                <input type="text" id="cfgPostIngestionCode"
+                  class="w-full border border-gray-200 rounded px-2 py-1 text-[10px] font-mono"
+                  placeholder="e.g. my-indicators">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-400 mb-0.5">Webhook URL (optional)</label>
+                <input type="text" id="cfgPostIngestionWebhook"
+                  class="w-full border border-gray-200 rounded px-2 py-1 text-[10px] font-mono">
+              </div>
+            </div>
+          </details>
+          <details class="text-[10px] text-gray-500">
+            <summary class="cursor-pointer hover:text-gray-700">Webhook URLs (core pipelines)</summary>
             <div class="mt-1.5 space-y-1.5">
               <div>
                 <label class="block text-[10px] text-gray-400 mb-0.5">1. Structure Proposal (AI)</label>
@@ -690,19 +739,20 @@
                   class="w-full border border-gray-200 rounded px-2 py-1 text-[10px] font-mono">
               </div>
               <div>
-                <label class="block text-[10px] text-gray-400 mb-0.5">4. Ingestion (shared)</label>
+                <label class="block text-[10px] text-gray-400 mb-0.5">4. Ingestion</label>
                 <input type="text" id="cfgUrlIngestion"
-                  class="w-full border border-gray-200 rounded px-2 py-1 text-[10px] font-mono">
-              </div>
-              <div>
-                <label class="block text-[10px] text-gray-400 mb-0.5">5. Indicators (dashboard refresh)</label>
-                <input type="text" id="cfgUrlIndicators"
                   class="w-full border border-gray-200 rounded px-2 py-1 text-[10px] font-mono">
               </div>
             </div>
           </details>
-          <button onclick="savePipelineConfig()"
-            class="w-full px-2 py-1.5 text-xs bg-pink-600 text-white rounded hover:bg-pink-700">Save</button>
+          <div class="flex gap-2">
+            <button onclick="savePipelineConfig()"
+              class="flex-1 px-2 py-1.5 text-xs bg-pink-600 text-white rounded hover:bg-pink-700">Save to
+              workspace</button>
+            <button onclick="savePipelineConfigLocal()"
+              class="px-2 py-1.5 text-xs bg-gray-200 text-gray-600 rounded hover:bg-gray-300"
+              title="Save to browser only (for local dev)">Local</button>
+          </div>
         </div>
       </div>
 
@@ -733,13 +783,13 @@
             </div>
             <div>
               <h1 class="text-lg font-semibold text-gray-900">AEDES AI - Excel Validation</h1>
-              <p class="text-xs text-gray-500">AI-powered structure detection, schema generation, validation & ingestion</p>
+              <p class="text-xs text-gray-500">AI-powered structure detection, schema generation, validation & ingestion
+              </p>
             </div>
           </div>
           <div class="flex items-center gap-3">
             <div id="statusBadge" class="hidden px-3 py-1 rounded-full text-xs font-medium"></div>
-            <a href="https://app.demo.openhexa.org/workspaces/aedes/webapps/aedes-dashboard/play/"
-              target="_blank" rel="noopener noreferrer"
+            <a id="dashboardLink" href="#" target="_blank" rel="noopener noreferrer" style="display:none"
               class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-pink-700 bg-pink-50 border border-pink-200 rounded-lg hover:bg-pink-100 transition">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -786,14 +836,19 @@
               <div class="px-4 py-2 bg-gradient-to-r from-violet-50 to-white flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                   <span class="text-xs font-semibold text-violet-800">Rule Builder</span>
-                  <span id="ruleBuilderScope" class="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600"></span>
+                  <span id="ruleBuilderScope"
+                    class="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600"></span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <button onclick="clearRuleBuilder()" class="text-[10px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded hover:bg-gray-100" title="Clear selection">Clear</button>
-                  <button onclick="closeRuleBuilder()" class="text-gray-400 hover:text-gray-600 text-lg leading-none" title="Close">&times;</button>
+                  <button onclick="clearRuleBuilder()"
+                    class="text-[10px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded hover:bg-gray-100"
+                    title="Clear selection">Clear</button>
+                  <button onclick="closeRuleBuilder()" class="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                    title="Close">&times;</button>
                 </div>
               </div>
 
@@ -801,7 +856,8 @@
                 <!-- Selection display -->
                 <div id="ruleSelectionInfo" class="flex items-center gap-2 flex-wrap text-xs">
                   <span class="text-gray-500">Selected:</span>
-                  <span id="ruleSelectionLabel" class="font-mono text-violet-700 bg-violet-50 px-2 py-0.5 rounded">—</span>
+                  <span id="ruleSelectionLabel"
+                    class="font-mono text-violet-700 bg-violet-50 px-2 py-0.5 rounded">—</span>
                 </div>
 
                 <!-- Rule form: LEFT — OPERATOR — RIGHT -->
@@ -816,7 +872,8 @@
                     </div>
                     <!-- Aggregation (shown for range selections) -->
                     <div id="ruleLeftAggWrapper" class="hidden">
-                      <select id="ruleLeftAgg" onchange="updateRulePreview()" class="w-full border border-gray-200 rounded px-2 py-1 text-[11px]">
+                      <select id="ruleLeftAgg" onchange="updateRulePreview()"
+                        class="w-full border border-gray-200 rounded px-2 py-1 text-[11px]">
                         <option value="">No aggregation (each cell)</option>
                         <option value="sum">SUM</option>
                         <option value="avg">AVERAGE</option>
@@ -830,7 +887,8 @@
                   <!-- Operator -->
                   <div class="space-y-1.5" style="min-width: 90px;">
                     <label class="block text-[9px] font-medium text-gray-400 uppercase">Operator</label>
-                    <select id="ruleOperator" onchange="updateRulePreview()" class="w-full border border-violet-200 rounded-lg px-2 py-1.5 text-xs font-medium text-violet-700 bg-violet-50">
+                    <select id="ruleOperator" onchange="updateRulePreview()"
+                      class="w-full border border-violet-200 rounded-lg px-2 py-1.5 text-xs font-medium text-violet-700 bg-violet-50">
                       <option value=">=">&gt;=</option>
                       <option value="<=">&lt;=</option>
                       <option value=">">&gt;</option>
@@ -845,7 +903,8 @@
                   <div class="flex-1 space-y-1.5">
                     <label class="block text-[9px] font-medium text-gray-400 uppercase">Right operand</label>
                     <div class="flex items-center gap-1">
-                      <select id="ruleRightMode" onchange="toggleRuleRightMode()" class="border border-gray-200 rounded px-1.5 py-1 text-[10px] text-gray-500">
+                      <select id="ruleRightMode" onchange="toggleRuleRightMode()"
+                        class="border border-gray-200 rounded px-1.5 py-1 text-[10px] text-gray-500">
                         <option value="value">Value</option>
                         <option value="cell">Cell</option>
                         <option value="range">Range+Agg</option>
@@ -853,9 +912,13 @@
                     </div>
                     <!-- Value input -->
                     <div id="ruleRightValueBox">
-                      <input type="number" id="ruleRightValue" onchange="updateRulePreview()" oninput="updateRulePreview()" placeholder="e.g. 100" class="w-full border border-gray-200 rounded px-2 py-1 text-xs">
+                      <input type="number" id="ruleRightValue" onchange="updateRulePreview()"
+                        oninput="updateRulePreview()" placeholder="e.g. 100"
+                        class="w-full border border-gray-200 rounded px-2 py-1 text-xs">
                       <!-- Second value for 'between' -->
-                      <input type="number" id="ruleRightValue2" onchange="updateRulePreview()" oninput="updateRulePreview()" placeholder="max" class="hidden w-full border border-gray-200 rounded px-2 py-1 text-xs mt-1">
+                      <input type="number" id="ruleRightValue2" onchange="updateRulePreview()"
+                        oninput="updateRulePreview()" placeholder="max"
+                        class="hidden w-full border border-gray-200 rounded px-2 py-1 text-xs mt-1">
                     </div>
                     <!-- Cell/Range pick (click in preview) -->
                     <div id="ruleRightCellBox" class="hidden">
@@ -863,7 +926,8 @@
                         <span id="ruleRightCellLabel" class="text-xs text-gray-400 italic">Click a cell</span>
                       </div>
                       <div id="ruleRightAggWrapper" class="hidden mt-1">
-                        <select id="ruleRightAgg" onchange="updateRulePreview()" class="w-full border border-gray-200 rounded px-2 py-1 text-[11px]">
+                        <select id="ruleRightAgg" onchange="updateRulePreview()"
+                          class="w-full border border-gray-200 rounded px-2 py-1 text-[11px]">
                           <option value="sum">SUM</option>
                           <option value="avg">AVERAGE</option>
                           <option value="min">MIN</option>
@@ -878,36 +942,46 @@
                 <div class="flex items-start gap-3">
                   <div class="flex-1">
                     <label class="block text-[9px] font-medium text-gray-400 uppercase mb-1">Formula preview</label>
-                    <div id="ruleHumanPreview" class="text-xs font-mono text-violet-700 bg-violet-50 rounded px-3 py-1.5 min-h-[1.5rem]">—</div>
+                    <div id="ruleHumanPreview"
+                      class="text-xs font-mono text-violet-700 bg-violet-50 rounded px-3 py-1.5 min-h-[1.5rem]">—</div>
                   </div>
                   <div class="flex-1">
                     <label class="block text-[9px] font-medium text-gray-400 uppercase mb-1">JsonLogic</label>
-                    <div id="ruleJsonPreview" class="text-[10px] font-mono text-gray-500 bg-gray-50 rounded px-3 py-1.5 min-h-[1.5rem] overflow-x-auto whitespace-nowrap">—</div>
+                    <div id="ruleJsonPreview"
+                      class="text-[10px] font-mono text-gray-500 bg-gray-50 rounded px-3 py-1.5 min-h-[1.5rem] overflow-x-auto whitespace-nowrap">
+                      —</div>
                   </div>
                 </div>
 
                 <!-- Description + Combine mode + Apply -->
                 <div class="flex items-end gap-2">
                   <div class="flex-1">
-                    <label class="block text-[9px] font-medium text-gray-400 uppercase mb-1">Rule description (optional)</label>
-                    <input type="text" id="ruleDescription" placeholder="e.g. Budget must be positive" class="w-full border border-gray-200 rounded px-2 py-1 text-xs">
+                    <label class="block text-[9px] font-medium text-gray-400 uppercase mb-1">Rule description
+                      (optional)</label>
+                    <input type="text" id="ruleDescription" placeholder="e.g. Budget must be positive"
+                      class="w-full border border-gray-200 rounded px-2 py-1 text-xs">
                   </div>
                   <div id="ruleCombineModeWrapper" class="hidden">
                     <label class="block text-[9px] font-medium text-gray-400 uppercase mb-1">Join with</label>
-                    <select id="ruleCombineMode" class="border border-amber-200 rounded px-2 py-1 text-[11px] bg-amber-50 text-amber-700 font-medium">
+                    <select id="ruleCombineMode"
+                      class="border border-amber-200 rounded px-2 py-1 text-[11px] bg-amber-50 text-amber-700 font-medium">
                       <option value="and">AND</option>
                       <option value="or">OR</option>
                     </select>
                   </div>
-                  <button onclick="applyRule()" id="ruleApplyBtn" disabled class="px-4 py-1.5 text-xs bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  <button onclick="applyRule()" id="ruleApplyBtn" disabled
+                    class="px-4 py-1.5 text-xs bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
                     Apply Rule
                   </button>
                 </div>
 
                 <!-- Existing rules list -->
                 <div id="ruleExistingList" class="hidden">
-                  <label class="block text-[9px] font-medium text-gray-400 uppercase mb-1">Existing rules on selection</label>
+                  <label class="block text-[9px] font-medium text-gray-400 uppercase mb-1">Existing rules on
+                    selection</label>
                   <div id="ruleExistingContent" class="space-y-1"></div>
                 </div>
               </div>
@@ -1119,35 +1193,103 @@
 
     // ---------------------------------------------------------------------------
     // Pipeline Configuration
-    // ---------------------------------------------------------------------------
+    // -----------------------------------s----------------------------------------
+    // Auto-detect apiBase and workspaceSlug.
+    // OpenHexa webapps run inside an iframe on api.demo.openhexa.org (blob/API origin).
+    // The parent page is app.demo.openhexa.org — a DIFFERENT origin → CORS blocks cross-origin calls.
+    // Therefore apiBase MUST be empty (relative paths) so all API calls stay on the same origin.
+    // For workspaceSlug, URL-based extraction fails (iframe URL has a UUID, referrer has no path).
+    // So we query the GraphQL API (same-origin, cookie-auth) to discover workspaces.
+    function detectFromUrl() {
+      let workspaceSlug = '';
+
+      // Try to extract slug from URL path (works if NOT in iframe)
+      const locMatch = window.location.pathname.match(/\/workspaces\/([^/]+)\//);
+      if (locMatch) {
+        workspaceSlug = locMatch[1];
+      }
+
+      // Try referrer path (sometimes has full path)
+      if (!workspaceSlug && document.referrer) {
+        try {
+          const refMatch = new URL(document.referrer).pathname.match(/\/workspaces\/([^/]+)\//);
+          if (refMatch) workspaceSlug = refMatch[1];
+        } catch (e) { /* invalid referrer */ }
+      }
+
+      // apiBase is ALWAYS empty — use relative paths to stay on the same origin
+      const apiBase = '';
+      console.log('[detectFromUrl]', { apiBase, workspaceSlug, origin: window.location.origin, referrer: document.referrer });
+      return { apiBase, workspaceSlug };
+    }
+    const _detected = detectFromUrl();
+
+    // Async workspace slug discovery via GraphQL (called during init if slug not found from URL)
+    async function detectWorkspaceSlug() {
+      try {
+        const resp = await fetch('/graphql/Workspaces/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            operationName: 'Workspaces',
+            query: `query Workspaces { workspaces(page: 1, perPage: 100) { items { slug name } } }`,
+            variables: {},
+          }),
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const result = await resp.json();
+        const items = result.data?.workspaces?.items || [];
+        console.log('[detectWorkspaceSlug] found workspaces:', items.map(w => w.slug));
+        if (items.length === 1) {
+          return items[0].slug;
+        } else if (items.length > 1) {
+          // Check localStorage for last-visited hint (may have been set in a same-origin context)
+          const lastVisited = localStorage.getItem('last-visited-workspace');
+          if (lastVisited && items.some(w => w.slug === lastVisited)) {
+            console.log('[detectWorkspaceSlug] using last-visited-workspace:', lastVisited);
+            return lastVisited;
+          }
+          // Return first workspace as fallback — user can change in settings
+          console.log('[detectWorkspaceSlug] multiple workspaces, using first:', items[0].slug);
+          return items[0].slug;
+        }
+      } catch (e) {
+        console.warn('[detectWorkspaceSlug] GraphQL query failed:', e);
+      }
+      return '';
+    }
+
     const PIPELINE_CONFIG = {
-      apiBase: '',  // same origin — use relative paths
-      workspaceSlug: 'aedes',
+      apiBase: _detected.apiBase,
+      workspaceSlug: _detected.workspaceSlug,
+      dashboardUrl: '',           // admin-configurable; dashboard button hidden if empty
+      postIngestionPipeline: {    // optional pipeline to run after ingestion (e.g. indicators)
+        enabled: false,
+        code: '',
+        webhookUrl: '',
+        label: 'Post-ingestion pipeline',
+      },
       pipelines: {
         structureProposal: {
-          code: 'aedes-structure-proposal',
+          code: 'ai-structure-proposal',
           webhookUrl: '',
           label: '1. Structure Proposal (AI)',
         },
         generateSchema: {
-          code: 'aedes-schema-from-ai-template',
+          code: 'schema-validation',
           webhookUrl: '',
           label: '2. Schema from AI Template',
         },
         validator: {
-          code: 'aedes-xls-ai-validation',
+          code: 'xls-validation',
           webhookUrl: '',
           label: '3. Validate Excel (AI schema)',
         },
         ingestion: {
-          code: 'aedes-xls-ingest',
+          code: 'xls-ingest',
           webhookUrl: '',
           label: '4. Ingest to Database',
-        },
-        indicators: {
-          code: 'aedes-indicators',
-          webhookUrl: '',
-          label: '5. Refresh Indicators',
         },
       },
     };
@@ -1169,8 +1311,10 @@
       },
 
       async graphql(operationName, query, variables) {
+        const url = this._apiUrl(`/graphql/${operationName}/`);
+        console.log(`[GraphQL] ${operationName} → ${url}`);
         const resp = await fetch(
-          this._apiUrl(`/graphql/${operationName}/`),
+          url,
           {
             method: 'POST',
             credentials: 'include',
@@ -1705,32 +1849,34 @@
             .join(', ') || 'database';
           showToast(`Data saved to: ${tableNames}`, 'success');
 
-          // Chain: trigger indicators pipeline to refresh dashboard
-          const indicatorsDef = PIPELINE_CONFIG.pipelines.indicators;
-          showToast('Refreshing dashboard...', 'info');
-          btn.innerHTML = '<svg class="w-4 h-4 spin-slow" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Refreshing dashboard...';
+          // Chain: trigger post-ingestion pipeline if configured
+          const postDef = PIPELINE_CONFIG.postIngestionPipeline;
+          if (postDef.enabled && (postDef.code || postDef.webhookUrl)) {
+            showToast(`Running ${postDef.label || 'post-ingestion pipeline'}...`, 'info');
+            btn.innerHTML = `<svg class="w-4 h-4 spin-slow" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> ${esc(postDef.label || 'Post-ingestion')}...`;
 
-          try {
-            let indRun;
-            if (indicatorsDef.webhookUrl) {
-              indRun = await OpenHexaAPI.triggerPipelineWebhook(indicatorsDef.webhookUrl, {});
-            } else {
-              indRun = await OpenHexaAPI.triggerPipeline(indicatorsDef.code, {});
+            try {
+              let indRun;
+              if (postDef.webhookUrl) {
+                indRun = await OpenHexaAPI.triggerPipelineWebhook(postDef.webhookUrl, {});
+              } else {
+                indRun = await OpenHexaAPI.triggerPipeline(postDef.code, {});
+              }
+              const indRunId = indRun.run_id || indRun.id;
+              if (!indRunId) throw new Error('No run ID returned from post-ingestion pipeline');
+
+              const indPollResult = await pollPipelineRun(indRunId, (pct, msg) => {
+                btn.innerHTML = `<svg class="w-4 h-4 spin-slow" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> ${esc(postDef.label || 'Post-ingestion')}... (${pct}%)`;
+              });
+
+              if (indPollResult.status === 'success') {
+                showToast(`${postDef.label || 'Post-ingestion pipeline'} completed`, 'success');
+              } else {
+                showToast(`${postDef.label || 'Post-ingestion pipeline'} failed: ` + indPollResult.status, 'error');
+              }
+            } catch (indErr) {
+              showToast(`${postDef.label || 'Post-ingestion pipeline'} failed: ` + indErr.message, 'error');
             }
-            const indRunId = indRun.run_id || indRun.id;
-            if (!indRunId) throw new Error('No run ID returned from indicators pipeline');
-
-            const indPollResult = await pollPipelineRun(indRunId, (pct, msg) => {
-              btn.innerHTML = `<svg class="w-4 h-4 spin-slow" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Refreshing dashboard... (${pct}%)`;
-            });
-
-            if (indPollResult.status === 'success') {
-              showToast('Dashboard up to date', 'success');
-            } else {
-              showToast('Dashboard refresh failed: ' + indPollResult.status, 'error');
-            }
-          } catch (indErr) {
-            showToast('Dashboard refresh failed: ' + indErr.message, 'error');
           }
 
           btn.disabled = false;
@@ -1769,11 +1915,28 @@
       }
 
       if (!newSchema) {
-        document.getElementById('schemaContainer').innerHTML = '<p class="text-gray-400 text-center py-8">Could not load schema from workspace or locally.</p>';
+        schema = null;
+        const container = document.getElementById('schemaContainer');
+        if (isAdmin) {
+          container.innerHTML = `<div class="text-center py-8 space-y-2">
+            <p class="text-gray-400 text-sm">No schema found yet.</p>
+            <p class="text-gray-400 text-xs">Use <strong>Update Template</strong> above to generate one from an Excel template.</p>
+          </div>`;
+        } else {
+          container.innerHTML = `<div class="text-center py-8">
+            <p class="text-gray-400 text-sm">No validation schema configured yet.</p>
+            <p class="text-gray-400 text-xs mt-1">Ask an admin to generate the schema.</p>
+          </div>`;
+        }
+        // Hide schema-dependent UI elements
+        const saveBtn = document.getElementById('schemaSaveBtn');
+        if (saveBtn) saveBtn.style.display = 'none';
         return;
       }
 
       schema = newSchema;
+      const sub = document.getElementById('schemaSubtitle');
+      if (sub) sub.textContent = 'schema_validation.json';
       renderSchema();
     }
 
@@ -1787,9 +1950,9 @@
     <div class="flex justify-between items-center">
       <span class="font-semibold text-gray-700">Version</span>
       ${isAdmin
-        ? `<input type="text" value="${esc(schema.version || '')}" onchange="schema.version=this.value" class="w-20 text-right border border-gray-200 rounded px-2 py-0.5 text-xs">`
-        : `<span class="text-xs text-gray-600">${esc(schema.version || '')}</span>`
-      }
+          ? `<input type="text" value="${esc(schema.version || '')}" onchange="schema.version=this.value" class="w-20 text-right border border-gray-200 rounded px-2 py-0.5 text-xs">`
+          : `<span class="text-xs text-gray-600">${esc(schema.version || '')}</span>`
+        }
     </div>
     <p class="text-gray-500 mt-1 text-[10px]">${esc(schema.description || '')}</p>
     ${schema.template_file ? `<p class="text-[9px] text-gray-400 mt-1">Template: ${esc(schema.template_file)}</p>` : ''}
@@ -2084,7 +2247,7 @@
           s += `<div class="text-[9px] text-gray-400 uppercase px-2 mb-1">Property rows</div>`;
           const typeColors = { string: 'bg-blue-100 text-blue-700', number: 'bg-purple-100 text-purple-700', date: 'bg-green-100 text-green-700' };
           const cols = valContainer.columns || [];
-          const colRange = cols.length > 0 ? `${cols[0]}${'{row}'}:${cols[cols.length-1]}${'{row}'}` : '';
+          const colRange = cols.length > 0 ? `${cols[0]}${'{row}'}:${cols[cols.length - 1]}${'{row}'}` : '';
 
           for (const [rk, rd] of Object.entries(valContainer.rows)) {
             if (rk.startsWith('_')) continue;
@@ -2171,9 +2334,9 @@
     <code class="text-[10px] bg-gray-200 px-1 rounded text-gray-500 w-8 text-center flex-shrink-0">${esc(labelDef.cell)}</code>
     <span class="text-[9px] text-gray-400 uppercase flex-shrink-0 w-7">label</span>
     ${isAdmin
-      ? `<input type="text" value="${esc(labelDef.expected)}" class="flex-1 border border-gray-200 rounded px-1.5 py-0.5 text-xs bg-white" onchange="evalPath('${labelPath}').expected=this.value;renderExcelPreview(activeModuleKey)" onclick="event.stopPropagation()">`
-      : `<span class="flex-1 text-xs text-gray-600">${esc(labelDef.expected)}</span>`
-    }
+          ? `<input type="text" value="${esc(labelDef.expected)}" class="flex-1 border border-gray-200 rounded px-1.5 py-0.5 text-xs bg-white" onchange="evalPath('${labelPath}').expected=this.value;renderExcelPreview(activeModuleKey)" onclick="event.stopPropagation()">`
+          : `<span class="flex-1 text-xs text-gray-600">${esc(labelDef.expected)}</span>`
+        }
     ${labelDef.known_variants ? `<span class="text-[9px] text-amber-600 flex-shrink-0" title="${esc(labelDef.known_variants.join(', '))}">${labelDef.known_variants.length}v</span>` : ''}
     ${isAdmin ? `<button onclick="event.stopPropagation();deleteLabelValueField('${esc(labelModKey)}','${esc(labelKey)}','${esc(valueSecKey)}')" class="flex-shrink-0 text-gray-300 hover:text-red-500 transition" title="Delete this field">
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -2414,7 +2577,7 @@
       if (headerRow) {
         html += `<tr><td class="row-num">${headerRow}</td>`;
         // Label column (B): section label like "Bailleur(s)"
-        const labelKey = labelMod && labelDefs ? Object.entries(labelDefs).find(([k, v]) => v.cell === `B${headerRow}` || (v.cell && parseInt(v.cell.replace(/\D/g,'')) === headerRow && v.cell.replace(/\d/g,'') === 'B')) : null;
+        const labelKey = labelMod && labelDefs ? Object.entries(labelDefs).find(([k, v]) => v.cell === `B${headerRow}` || (v.cell && parseInt(v.cell.replace(/\D/g, '')) === headerRow && v.cell.replace(/\d/g, '') === 'B')) : null;
         const headerLabel = labelKey ? labelKey[1].expected : displayName;
         html += `<td class="cell-label" style="font-weight:600">${esc(headerLabel)}</td>`;
         // Element columns
@@ -2804,10 +2967,10 @@
             const dataAttrs = cell.canonical
               ? ` data-ref="${esc(ref)}" data-canonical="${esc(cell.canonical)}" data-scope="${cell.scope || ''}" data-vtype="${cell.vtype || ''}" data-group="${esc(cell.group || '')}" data-mod="${esc(cell.modKey || '')}" data-col="${colLetter(c)}" data-row="${r}"`
               : cell.scope === 'group'
-              ? ` data-ref="${esc(ref)}" data-scope="group" data-group="${esc(cell.group || '')}" data-mod="${esc(cell.modKey || '')}" data-col="${colLetter(c)}" data-row="${r}" data-gcols="${esc(cell.groupStartCol || '')}:${esc(cell.groupEndCol || '')}"`
-              : cell.scope === 'module'
-              ? ` data-ref="${esc(ref)}" data-scope="module" data-mod="${esc(cell.modKey || '')}" data-col="${colLetter(c)}" data-row="${r}" data-gcols="${esc(cell.moduleStartCol || '')}:${esc(cell.moduleEndCol || '')}"`
-              : '';
+                ? ` data-ref="${esc(ref)}" data-scope="group" data-group="${esc(cell.group || '')}" data-mod="${esc(cell.modKey || '')}" data-col="${colLetter(c)}" data-row="${r}" data-gcols="${esc(cell.groupStartCol || '')}:${esc(cell.groupEndCol || '')}"`
+                : cell.scope === 'module'
+                  ? ` data-ref="${esc(ref)}" data-scope="module" data-mod="${esc(cell.modKey || '')}" data-col="${colLetter(c)}" data-row="${r}" data-gcols="${esc(cell.moduleStartCol || '')}:${esc(cell.moduleEndCol || '')}"`
+                  : '';
             const selectable = (cell.canonical || cell.scope === 'group' || cell.scope === 'module') ? ' cell-selectable' : '';
             const hasRule = cell.canonical && cellHasRule(cell.canonical, cell.modKey, cell.scope) ? ' cell-has-rule' : '';
             html += `<td class="${cell.cls}${selectable}${hasRule}" ${span > 1 ? `colspan="${span}"` : ''} title="${esc(cell.text)}"${dataAttrs}>${esc(cell.text.substring(0, 28))}${cell.text.length > 28 ? '...' : ''}</td>`;
@@ -4027,64 +4190,140 @@
       document.getElementById('pipelineConfig').classList.toggle('hidden');
     }
 
-    async function loadPipelineConfig() {
-      // 1. Try loading from local pipeline_config.json (gitignored, easiest for dev)
-      try {
-        const resp = await fetch('pipeline_config.json');
-        if (resp.ok) {
-          const cfg = await resp.json();
-          if (cfg.workspaceSlug) PIPELINE_CONFIG.workspaceSlug = cfg.workspaceSlug;
-          if (cfg.webhookUrls) {
-            if (cfg.webhookUrls.structureProposal) PIPELINE_CONFIG.pipelines.structureProposal.webhookUrl = cfg.webhookUrls.structureProposal;
-            if (cfg.webhookUrls.generateSchema) PIPELINE_CONFIG.pipelines.generateSchema.webhookUrl = cfg.webhookUrls.generateSchema;
-            if (cfg.webhookUrls.validator) PIPELINE_CONFIG.pipelines.validator.webhookUrl = cfg.webhookUrls.validator;
-            if (cfg.webhookUrls.ingestion) PIPELINE_CONFIG.pipelines.ingestion.webhookUrl = cfg.webhookUrls.ingestion;
-            if (cfg.webhookUrls.indicators) PIPELINE_CONFIG.pipelines.indicators.webhookUrl = cfg.webhookUrls.indicators;
-          }
-          console.log('Pipeline config loaded from pipeline_config.json');
-        }
-      } catch (e) { /* file not found, continue */ }
-
-      // 2. Override with localStorage if available (user-saved from Settings panel)
-      try {
-        const saved = JSON.parse(localStorage.getItem('ohAIPipelineConfig') || '{}');
-        if (saved.workspaceSlug) PIPELINE_CONFIG.workspaceSlug = saved.workspaceSlug;
-        if (saved.webhookUrls) {
-          if (saved.webhookUrls.structureProposal) PIPELINE_CONFIG.pipelines.structureProposal.webhookUrl = saved.webhookUrls.structureProposal;
-          if (saved.webhookUrls.generateSchema) PIPELINE_CONFIG.pipelines.generateSchema.webhookUrl = saved.webhookUrls.generateSchema;
-          if (saved.webhookUrls.validator) PIPELINE_CONFIG.pipelines.validator.webhookUrl = saved.webhookUrls.validator;
-          if (saved.webhookUrls.ingestion) PIPELINE_CONFIG.pipelines.ingestion.webhookUrl = saved.webhookUrls.ingestion;
-        }
-      } catch (e) { }
-
-      // Populate UI fields
-      document.getElementById('cfgWorkspaceSlug').value = PIPELINE_CONFIG.workspaceSlug;
-      document.getElementById('cfgUrlStructure').value = PIPELINE_CONFIG.pipelines.structureProposal.webhookUrl;
-      document.getElementById('cfgUrlGenSchema').value = PIPELINE_CONFIG.pipelines.generateSchema.webhookUrl;
-      document.getElementById('cfgUrlValidator').value = PIPELINE_CONFIG.pipelines.validator.webhookUrl;
-      document.getElementById('cfgUrlIngestion').value = PIPELINE_CONFIG.pipelines.ingestion.webhookUrl;
-      document.getElementById('cfgUrlIndicators').value = PIPELINE_CONFIG.pipelines.indicators.webhookUrl;
+    function _applyConfigObj(cfg) {
+      if (cfg.workspaceSlug) PIPELINE_CONFIG.workspaceSlug = cfg.workspaceSlug;
+      if (cfg.dashboardUrl !== undefined) PIPELINE_CONFIG.dashboardUrl = cfg.dashboardUrl;
+      if (cfg.postIngestionPipeline) {
+        PIPELINE_CONFIG.postIngestionPipeline.enabled = !!cfg.postIngestionPipeline.enabled;
+        if (cfg.postIngestionPipeline.code) PIPELINE_CONFIG.postIngestionPipeline.code = cfg.postIngestionPipeline.code;
+        if (cfg.postIngestionPipeline.webhookUrl !== undefined) PIPELINE_CONFIG.postIngestionPipeline.webhookUrl = cfg.postIngestionPipeline.webhookUrl;
+      }
+      if (cfg.webhookUrls) {
+        if (cfg.webhookUrls.structureProposal) PIPELINE_CONFIG.pipelines.structureProposal.webhookUrl = cfg.webhookUrls.structureProposal;
+        if (cfg.webhookUrls.generateSchema) PIPELINE_CONFIG.pipelines.generateSchema.webhookUrl = cfg.webhookUrls.generateSchema;
+        if (cfg.webhookUrls.validator) PIPELINE_CONFIG.pipelines.validator.webhookUrl = cfg.webhookUrls.validator;
+        if (cfg.webhookUrls.ingestion) PIPELINE_CONFIG.pipelines.ingestion.webhookUrl = cfg.webhookUrls.ingestion;
+      }
     }
 
-    function savePipelineConfig() {
-      PIPELINE_CONFIG.workspaceSlug = document.getElementById('cfgWorkspaceSlug').value.trim();
-      PIPELINE_CONFIG.pipelines.structureProposal.webhookUrl = document.getElementById('cfgUrlStructure').value.trim();
-      PIPELINE_CONFIG.pipelines.generateSchema.webhookUrl = document.getElementById('cfgUrlGenSchema').value.trim();
-      PIPELINE_CONFIG.pipelines.validator.webhookUrl = document.getElementById('cfgUrlValidator').value.trim();
-      PIPELINE_CONFIG.pipelines.ingestion.webhookUrl = document.getElementById('cfgUrlIngestion').value.trim();
-      PIPELINE_CONFIG.pipelines.indicators.webhookUrl = document.getElementById('cfgUrlIndicators').value.trim();
-
-      localStorage.setItem('ohAIPipelineConfig', JSON.stringify({
+    function _buildConfigObj() {
+      return {
         workspaceSlug: PIPELINE_CONFIG.workspaceSlug,
+        dashboardUrl: PIPELINE_CONFIG.dashboardUrl,
+        postIngestionPipeline: {
+          enabled: PIPELINE_CONFIG.postIngestionPipeline.enabled,
+          code: PIPELINE_CONFIG.postIngestionPipeline.code,
+          webhookUrl: PIPELINE_CONFIG.postIngestionPipeline.webhookUrl,
+        },
         webhookUrls: {
           structureProposal: PIPELINE_CONFIG.pipelines.structureProposal.webhookUrl,
           generateSchema: PIPELINE_CONFIG.pipelines.generateSchema.webhookUrl,
           validator: PIPELINE_CONFIG.pipelines.validator.webhookUrl,
           ingestion: PIPELINE_CONFIG.pipelines.ingestion.webhookUrl,
-          indicators: PIPELINE_CONFIG.pipelines.indicators.webhookUrl,
         },
-      }));
-      showToast('Pipeline config saved', 'success');
+      };
+    }
+
+    function _populateConfigUI() {
+      document.getElementById('cfgWorkspaceSlug').value = PIPELINE_CONFIG.workspaceSlug;
+      const hint = document.getElementById('cfgSlugAutoHint');
+      if (hint) hint.textContent = PIPELINE_CONFIG.workspaceSlug ? `Detected: ${PIPELINE_CONFIG.workspaceSlug}` : 'Could not auto-detect — please enter manually';
+      document.getElementById('cfgDashboardUrl').value = PIPELINE_CONFIG.dashboardUrl;
+      document.getElementById('cfgPostIngestionEnabled').checked = PIPELINE_CONFIG.postIngestionPipeline.enabled;
+      document.getElementById('cfgPostIngestionCode').value = PIPELINE_CONFIG.postIngestionPipeline.code;
+      document.getElementById('cfgPostIngestionWebhook').value = PIPELINE_CONFIG.postIngestionPipeline.webhookUrl;
+      document.getElementById('cfgUrlStructure').value = PIPELINE_CONFIG.pipelines.structureProposal.webhookUrl;
+      document.getElementById('cfgUrlGenSchema').value = PIPELINE_CONFIG.pipelines.generateSchema.webhookUrl;
+      document.getElementById('cfgUrlValidator').value = PIPELINE_CONFIG.pipelines.validator.webhookUrl;
+      document.getElementById('cfgUrlIngestion').value = PIPELINE_CONFIG.pipelines.ingestion.webhookUrl;
+      _updateDashboardButton();
+    }
+
+    function _updateDashboardButton() {
+      const link = document.getElementById('dashboardLink');
+      if (link) {
+        if (PIPELINE_CONFIG.dashboardUrl) {
+          link.href = PIPELINE_CONFIG.dashboardUrl;
+          link.style.display = '';
+        } else {
+          link.style.display = 'none';
+        }
+      }
+    }
+
+    function _readConfigFromUI() {
+      PIPELINE_CONFIG.workspaceSlug = document.getElementById('cfgWorkspaceSlug').value.trim();
+      PIPELINE_CONFIG.dashboardUrl = document.getElementById('cfgDashboardUrl').value.trim();
+      PIPELINE_CONFIG.postIngestionPipeline.enabled = document.getElementById('cfgPostIngestionEnabled').checked;
+      PIPELINE_CONFIG.postIngestionPipeline.code = document.getElementById('cfgPostIngestionCode').value.trim();
+      PIPELINE_CONFIG.postIngestionPipeline.webhookUrl = document.getElementById('cfgPostIngestionWebhook').value.trim();
+      PIPELINE_CONFIG.pipelines.structureProposal.webhookUrl = document.getElementById('cfgUrlStructure').value.trim();
+      PIPELINE_CONFIG.pipelines.generateSchema.webhookUrl = document.getElementById('cfgUrlGenSchema').value.trim();
+      PIPELINE_CONFIG.pipelines.validator.webhookUrl = document.getElementById('cfgUrlValidator').value.trim();
+      PIPELINE_CONFIG.pipelines.ingestion.webhookUrl = document.getElementById('cfgUrlIngestion').value.trim();
+      _updateDashboardButton();
+    }
+
+    async function loadPipelineConfig() {
+      // 1. Try loading from workspace bucket (app_config.json — shared, admin-managed)
+      try {
+        const downloadUrl = await OpenHexaAPI.getFileDownloadUrl('app_config.json');
+        if (downloadUrl) {
+          const resp = await fetch(downloadUrl);
+          if (resp.ok) {
+            _applyConfigObj(await resp.json());
+            console.log('Pipeline config loaded from workspace app_config.json');
+          }
+        }
+      } catch (e) { console.warn('Could not load app_config.json from workspace:', e); }
+
+      // 2. Try local pipeline_config.json (gitignored, for dev)
+      try {
+        const resp = await fetch('pipeline_config.json');
+        if (resp.ok) {
+          _applyConfigObj(await resp.json());
+          console.log('Pipeline config loaded from pipeline_config.json');
+        }
+      } catch (e) { /* file not found, continue */ }
+
+      // 3. Override with localStorage if available
+      try {
+        const saved = JSON.parse(localStorage.getItem('ohAIPipelineConfig') || '{}');
+        _applyConfigObj(saved);
+      } catch (e) { }
+
+      _populateConfigUI();
+
+      // Warn if workspaceSlug could not be resolved at all
+      if (!PIPELINE_CONFIG.workspaceSlug) {
+        console.warn('workspaceSlug is empty — workspace API calls will fail. Set it in Pipeline Settings.');
+      }
+    }
+
+    async function savePipelineConfig() {
+      _readConfigFromUI();
+      const cfg = _buildConfigObj();
+
+      // Save to workspace bucket as app_config.json
+      try {
+        const jsonStr = JSON.stringify(cfg, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const file = new File([blob], 'app_config.json', { type: 'application/json' });
+        await OpenHexaAPI.uploadFileToWorkspace(file, 'app_config.json');
+        showToast('Config saved to workspace (app_config.json)', 'success');
+      } catch (e) {
+        showToast('Could not save to workspace: ' + e.message, 'error');
+      }
+
+      // Also persist in localStorage as cache
+      localStorage.setItem('ohAIPipelineConfig', JSON.stringify(cfg));
+      togglePipelineConfig();
+    }
+
+    function savePipelineConfigLocal() {
+      _readConfigFromUI();
+      localStorage.setItem('ohAIPipelineConfig', JSON.stringify(_buildConfigObj()));
+      showToast('Config saved locally (browser only)', 'success');
       togglePipelineConfig();
     }
 
@@ -4326,11 +4565,14 @@
     // ---------------------------------------------------------------------------
     async function checkUserRole() {
       try {
+        console.log('[checkUserRole] workspaceSlug:', PIPELINE_CONFIG.workspaceSlug, 'apiBase:', PIPELINE_CONFIG.apiBase);
         const perms = await OpenHexaAPI.checkWorkspacePermissions();
+        console.log('[checkUserRole] permissions response:', perms);
         // Only workspace admins (manageMembers) can edit schema.
         // Editors have update=true but should NOT be able to modify the template.
         isAdmin = !!perms.manageMembers;
         isEditor = !!perms.update && !isAdmin;
+        console.log('[checkUserRole] isAdmin:', isAdmin, 'isEditor:', isEditor);
       } catch (e) {
         console.warn('Could not check workspace permissions — defaulting to viewer:', e);
         isAdmin = false;
@@ -4502,7 +4744,7 @@
     };
 
     // Attach click handlers to the preview body (event delegation)
-    document.getElementById('previewBody').addEventListener('click', function(e) {
+    document.getElementById('previewBody').addEventListener('click', function (e) {
       const td = e.target.closest('td.cell-selectable');
       if (!td) return;
       e.stopPropagation();
@@ -4819,7 +5061,7 @@
     }
 
     // Show/hide the second value input when operator changes
-    document.getElementById('ruleOperator').addEventListener('change', function() {
+    document.getElementById('ruleOperator').addEventListener('change', function () {
       const op = this.value;
       document.getElementById('ruleRightValue2').classList.toggle('hidden', op !== 'between');
       updateRulePreview();
@@ -4849,8 +5091,8 @@
         const groupLabel = sel.moduleScope
           ? `<div class="text-[9px] text-pink-500 font-medium">Module: ${esc(first.modKey || '')}</div>`
           : sel.groupScope
-          ? `<div class="text-[9px] text-purple-500 font-medium">Group: ${esc(sel.groupCanon || first.group || '')}</div>`
-          : '';
+            ? `<div class="text-[9px] text-purple-500 font-medium">Group: ${esc(sel.groupCanon || first.group || '')}</div>`
+            : '';
         leftContent.innerHTML = `
           ${groupLabel}
           <div class="font-mono text-violet-700 font-medium">${esc(label)}</div>
@@ -5724,9 +5966,24 @@
     // ---------------------------------------------------------------------------
     // Init
     // ---------------------------------------------------------------------------
-    loadPipelineConfig();
-    loadSchema();
-    checkUserRole();
+    // apiBase is always '' (relative paths — same origin).
+    // workspaceSlug is auto-detected: first from URL, then via GraphQL workspace listing.
+    // loadPipelineConfig can override with saved config from workspace/localStorage.
+    (async () => {
+      // If URL-based detection didn't find the slug, try GraphQL discovery
+      if (!PIPELINE_CONFIG.workspaceSlug) {
+        const discovered = await detectWorkspaceSlug();
+        if (discovered) {
+          PIPELINE_CONFIG.workspaceSlug = discovered;
+          console.log('[init] workspaceSlug discovered via API:', discovered);
+        }
+      }
+
+      await loadPipelineConfig();
+      // Schema + role checks depend on workspaceSlug being resolved
+      loadSchema();
+      checkUserRole();
+    })();
   </script>
 </body>
 
