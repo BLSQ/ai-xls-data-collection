@@ -688,7 +688,7 @@ Produce a single JSON object with this structure:
     `"fixed": true` (stable name) or `"fixed": false` (dynamic — name/count
     varies across template versions).  Indicator = `parent_canonical + "_" + sub_canonical`.
   Example: Module 8 has single columns (NA, National, Central) then a
-  group (Provincial → 26 province sub-columns marked `"fixed": false`).
+  group (Provincial → 26 province sub-columns marked `"fixed": false` if the provinces can change from one submission to another.).
 
 Now analyse the following spreadsheet and produce the structure_proposal JSON.
 """
