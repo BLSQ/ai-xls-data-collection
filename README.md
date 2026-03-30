@@ -95,7 +95,7 @@ Once complete, the schema appears in the left sidebar with all detected modules,
 ### 4.4 Review and Refine the Schema
 
 After generation, review the schema in the webapp:
-
+- **Duplication Rules** - select if the submissions ingestion should be enforced at metadata or data level (go to duplicates settings in the left panel)
 - **Check field types** — click any column card to edit: change `string` ↔ `number` ↔ `date`
 - **Mark required fields** — toggle the "Required" checkbox for mandatory columns
 - **Edit expected headers** — fix any AI misdetections (typos in labels are preserved; fix them here if needed)

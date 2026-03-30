@@ -11,6 +11,7 @@ to the workspace database:
 
 import json
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 import openpyxl
@@ -30,7 +31,14 @@ GUIDE_FILENAME = "extraction_guide.json"
     required=True,
     help="Path to the validated Excel file.",
 )
-def xls_ingest(excel_file: File):
+@parameter(
+    "contact_email",
+    name="Contact Email",
+    type=str,
+    required=False,
+    help="Email of the user submitting the data.",
+)
+def xls_ingest(excel_file: File, contact_email: str = ""):
     """Ingest a validated Excel file into the workspace database."""
     current_run.log_info(f"Starting ingestion of: {excel_file}")
 
@@ -46,8 +54,22 @@ def xls_ingest(excel_file: File):
     current_run.log_info(f"Loading workbook: {excel_path}")
     wb = openpyxl.load_workbook(str(excel_path), data_only=True)
 
+    # Duplicate rules from the extraction guide (set by the webapp)
+    dup_rules = guide.get("duplicate_rules", {})
+    dup_mode = dup_rules.get("mode", "no_check")
+    per_user = dup_rules.get("per_user_submission", False)
+    metadata_keys = [k["canonical_name"] for k in dup_rules.get("metadata_keys", [])]
+    data_keys = [k["canonical_name"] for k in dup_rules.get("data_keys", [])]
+    skip_delete = dup_mode == "no_check"
+
+    current_run.log_info(
+        f"Duplicate rules: mode={dup_mode}, per_user={per_user}, "
+        f"metadata_keys={metadata_keys}, data_keys={data_keys}"
+    )
+
     metadata_rows = []
     data_rows = []
+    submission_datetime = datetime.now(UTC).isoformat()
 
     for sheet_name, sheet_guide in guide.get("sheets", {}).items():
         if sheet_name not in wb.sheetnames:
@@ -59,18 +81,24 @@ def xls_ingest(excel_file: File):
         current_run.log_info(f"Ingesting sheet: '{sheet_name}'")
         ws = wb[sheet_name]
 
-        # Generate a deterministic unique ID for this program (file + sheet)
-        program_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{excel_path}::{sheet_name}"))
-
         # --- program_metadata ---
         meta_record = extract_metadata(ws, sheet_name, sheet_guide["metadata"])
-        meta_record["program_id"] = program_id
+        meta_record["contact_email"] = contact_email or ""
+        meta_record["submission_datetime"] = submission_datetime
+
+        # Compute entity_id based on duplicate rules
+        entity_id = _compute_entity_id(
+            dup_mode, meta_record, metadata_keys, per_user, contact_email,
+        )
+        meta_record["entity_id"] = entity_id
         metadata_rows.append(meta_record)
 
         # --- program_data ---
         sheet_data = extract_data(ws, sheet_name, sheet_guide["data"])
         for row in sheet_data:
-            row["program_id"] = program_id
+            row["entity_id"] = entity_id
+            if dup_mode == "full" and data_keys:
+                row["row_id"] = _compute_row_id(entity_id, row, data_keys)
         data_rows.extend(sheet_data)
 
     # Build DataFrames
@@ -84,10 +112,14 @@ def xls_ingest(excel_file: File):
     # Upsert to database (append new rows, handle schema evolution)
     engine = create_engine(workspace.database_url)
 
-    meta_result = upsert_table(df_meta, "program_metadata", engine)
+    meta_result = upsert_table(df_meta, "program_metadata", engine, skip_delete=skip_delete)
     current_run.log_info(f"program_metadata: {meta_result}")
 
-    data_result = upsert_table(df_data, "program_data", engine)
+    data_result = upsert_table(
+        df_data, "program_data", engine,
+        skip_delete=skip_delete,
+        id_column="row_id" if (dup_mode == "full" and data_keys) else "entity_id",
+    )
     current_run.log_info(f"program_data: {data_result}")
 
     current_run.log_info("Ingestion complete.")
@@ -199,12 +231,20 @@ def _truncate_col_names(df: pd.DataFrame, max_len: int = 63) -> pd.DataFrame:
     return df
 
 
-def upsert_table(df: pd.DataFrame, table_name: str, engine) -> str:
+def upsert_table(
+    df: pd.DataFrame,
+    table_name: str,
+    engine,
+    *,
+    skip_delete: bool = False,
+    id_column: str = "entity_id",
+) -> str:
     """Append rows to a database table, handling schema evolution.
 
     1. If table does not exist → create it.
     2. If table exists → ALTER TABLE to add any new columns (as TEXT, NULL).
-    3. DELETE existing rows whose program_id matches the incoming data.
+    3. DELETE existing rows whose *id_column* matches the incoming data
+       (skipped when *skip_delete* is True — ``no_check`` mode).
     4. APPEND the new rows.
 
     Returns a human-readable summary string.
@@ -233,15 +273,15 @@ def upsert_table(df: pd.DataFrame, table_name: str, engine) -> str:
                 conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN "{col}" {sql_type}'))
         current_run.log_info(f"  {table_name}: added {len(new_cols)} new column(s): {new_cols}")
 
-    # --- Delete existing rows with matching program_id ---
+    # --- Delete existing rows with matching id_column ---
     deleted = 0
-    if "program_id" in df.columns and "program_id" in existing_cols:
-        program_ids = df["program_id"].dropna().unique().tolist()
-        if program_ids:
+    if not skip_delete and id_column in df.columns and id_column in existing_cols:
+        ids = df[id_column].dropna().unique().tolist()
+        if ids:
             with engine.begin() as conn:
                 result = conn.execute(
-                    text(f'DELETE FROM "{table_name}" WHERE program_id = ANY(:ids)'),
-                    {"ids": program_ids},
+                    text(f'DELETE FROM "{table_name}" WHERE "{id_column}" = ANY(:ids)'),
+                    {"ids": ids},
                 )
                 deleted = result.rowcount
 
@@ -270,6 +310,52 @@ def _pandas_dtype_to_sql(series: pd.Series) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _compute_entity_id(
+    mode: str,
+    meta_record: dict,
+    metadata_keys: list[str],
+    per_user: bool,
+    contact_email: str,
+) -> str:
+    """Compute the entity_id for a metadata record.
+
+    - ``no_check``: random UUID v4 (every submission is unique).
+    - ``metadata_unique`` / ``full``: deterministic UUID v5 built from
+      the values of the selected *metadata_keys*.  When *per_user* is
+      True, *contact_email* is prepended so each user gets their own
+      submission identity.
+    """
+    if mode == "no_check" or not metadata_keys:
+        if mode != "no_check":
+            current_run.log_warning(
+                f"Duplicate mode '{mode}' but metadata_keys is empty — "
+                "falling back to random UUID (no deduplication)."
+            )
+        return str(uuid.uuid4())
+
+    parts: list[str] = []
+    if per_user:
+        parts.append(contact_email or "")
+    for key in sorted(metadata_keys):
+        val = meta_record.get(key)
+        parts.append("" if val is None else str(val))
+    seed = "::".join(parts)
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, seed))
+
+
+def _compute_row_id(entity_id: str, row: dict, data_keys: list[str]) -> str:
+    """Compute a per-row unique ID for ``full`` duplicate mode.
+
+    Combines the *entity_id* with the values of the selected *data_keys*
+    columns to produce a deterministic UUID v5 for each data row.
+    """
+    parts = [entity_id]
+    for key in sorted(data_keys):
+        val = row.get(key)
+        parts.append("" if val is None else str(val))
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "::".join(parts)))
+
+
 def _coerce(raw, value_type: str):
     """Coerce a raw cell value to a string representation for storage."""
     if raw is None:
@@ -281,8 +367,8 @@ def _coerce(raw, value_type: str):
         try:
             return float(raw)
         except (ValueError, TypeError):
-            return str(raw).strip() if raw else None
-    return str(raw).strip() if raw else None
+            return str(raw).strip() if raw is not None else None
+    return str(raw).strip() if raw is not None else None
 
 
 if __name__ == "__main__":

@@ -199,6 +199,12 @@ def _build_report(
         report["summary"]["total_warnings"] += warning_count
         report["summary"]["total_info"] += info_count
 
+    # Pass through duplicate_rules at the guide root so the ingestion
+    # pipeline can read them without re-loading the schema file.
+    dup_rules = schema.get("duplicate_rules")
+    if dup_rules:
+        extraction_guide["duplicate_rules"] = dup_rules
+
     return report, extraction_guide
 
 

@@ -153,6 +153,39 @@
       animation: modalIn 0.2s ease;
     }
 
+    /* Setup wizard stepper */
+    .wizard-step {
+      transition: all 0.2s ease;
+    }
+    .wizard-step.active .wizard-step-circle {
+      background: #ec4899;
+      color: white;
+      box-shadow: 0 0 0 3px rgba(236, 64, 122, 0.2);
+    }
+    .wizard-step.completed .wizard-step-circle {
+      background: #10b981;
+      color: white;
+    }
+    .wizard-step.pending .wizard-step-circle {
+      background: #e5e7eb;
+      color: #9ca3af;
+    }
+    .wizard-connector {
+      height: 2px;
+      flex: 1;
+      transition: background 0.3s ease;
+    }
+    .wizard-connector.done { background: #10b981; }
+    .wizard-connector.pending { background: #e5e7eb; }
+
+    @keyframes wizardSlideIn {
+      from { transform: translateY(-8px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .wizard-banner {
+      animation: wizardSlideIn 0.3s ease;
+    }
+
     @keyframes modalIn {
       from {
         transform: translateY(12px);
@@ -580,6 +613,37 @@
     </div>
   </div>
 
+  <!-- Duplicate-mode confirmation modal (Save to Database) -->
+  <div id="dupConfirmModal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center"
+    onclick="if(event.target===this)closeDupConfirmModal(false)">
+    <div class="modal-panel bg-white rounded-xl shadow-2xl w-[440px] flex flex-col border border-gray-200">
+      <div class="px-5 py-3 border-b border-gray-200 flex items-center gap-3 bg-gradient-to-r from-green-50 to-white rounded-t-xl">
+        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M16 3H8v4h8V3z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-800">Save to Database</h3>
+          <p class="text-[10px] text-gray-500 mt-0.5">Review duplicate handling before proceeding</p>
+        </div>
+        <button onclick="closeDupConfirmModal(false)" class="ml-auto text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+      </div>
+      <div class="p-5 space-y-3" id="dupConfirmBody"></div>
+      <div class="px-5 py-3 border-t border-gray-200 flex justify-end gap-2 bg-gray-50 rounded-b-xl">
+        <button onclick="closeDupConfirmModal(false)"
+          class="px-4 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-600">Cancel</button>
+        <button onclick="closeDupConfirmModal(true)"
+          class="px-4 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Confirm & Save
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast container -->
   <div id="toasts" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
 
@@ -589,29 +653,33 @@
     <!-- Left sidebar: Schema Editor -->
     <aside id="sidebar"
       class="sidebar w-[420px] shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
-      <div
-        class="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-pink-50 to-white">
-        <div>
-          <h2 class="text-sm font-semibold text-gray-800">Schema Template</h2>
-          <p id="schemaSubtitle" class="text-xs text-gray-500 mt-0.5">Schema Template</p>
+      <div class="border-b border-gray-200 bg-gradient-to-r from-pink-50 to-white">
+        <div class="p-4 flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-semibold text-gray-800">Schema Template</h2>
+            <p id="schemaSubtitle" class="text-xs text-gray-500 mt-0.5">Schema Template</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <span id="roleBadge"
+              class="px-1.5 py-0.5 text-[9px] rounded-full bg-gray-100 text-gray-500 font-medium">Viewer</span>
+            <button id="schemaSaveBtn" onclick="exportSchema()"
+              class="px-2 py-1 text-xs bg-pink-600 text-white rounded hover:bg-pink-700"
+              title="Upload schema to workspace and download locally" style="display:none">Save</button>
+            <button onclick="downloadTemplate()"
+              class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+              title="Download Excel template file">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Template
+            </button>
+            <button onclick="toggleSidebar()"
+              class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded hover:bg-gray-300">Hide</button>
+          </div>
         </div>
-        <div class="flex items-center gap-1">
-          <span id="roleBadge"
-            class="px-1.5 py-0.5 text-[9px] rounded-full bg-gray-100 text-gray-500 font-medium">Viewer</span>
-          <button id="schemaSaveBtn" onclick="exportSchema()"
-            class="px-2 py-1 text-xs bg-pink-600 text-white rounded hover:bg-pink-700"
-            title="Upload schema to workspace and download locally" style="display:none">Save</button>
-          <button onclick="downloadTemplate()"
-            class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
-            title="Download Excel template file">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Template
-          </button>
-          <button onclick="toggleSidebar()"
-            class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded hover:bg-gray-300">Hide</button>
+        <div id="userEmailDisplay" class="px-4 pb-2 text-right hidden">
+          <span class="text-[9px] text-gray-400 truncate max-w-[300px] inline-block"></span>
         </div>
       </div>
       <!-- Update Template (admin) -->
@@ -1114,6 +1182,17 @@
     let isAdmin = false;  // true if current user has workspace admin permissions
     let isEditor = false; // true if user has update permission (but not necessarily admin)
     let userGuidelines = ''; // free-text guidelines for Gemini AI structure proposal
+    let userEmail = '';   // logged-in user's email (fetched via GraphQL)
+
+    // Setup wizard state (admin-only, triggered after schema generation)
+    let wizardActive = false;  // true when the guided setup wizard is shown
+    let wizardStep = 0;        // 0=Upload, 1=Duplicates, 2=Validation, 3=Confirm/Save
+    const WIZARD_STEPS = [
+      { key: 'upload',     label: 'Upload' },
+      { key: 'duplicates', label: 'Duplicates' },
+      { key: 'review',     label: 'Review' },
+      { key: 'save',       label: 'Save' },
+    ];
 
     // ---------------------------------------------------------------------------
     // Example values — no hardcoded data; all examples come from the schema
@@ -1394,6 +1473,13 @@
         return this.graphql('GetPipelineRun', query, { runId });
       },
 
+      // Fetch the logged-in user's email
+      async fetchMe() {
+        const query = `query Me { me { user { email } } }`;
+        const result = await this.graphql('Me', query, {});
+        return result.data?.me?.user?.email || '';
+      },
+
       // Check if current user has admin permissions on the workspace
       async checkWorkspacePermissions() {
         const query = `
@@ -1666,9 +1752,18 @@
       const reuploadHint = document.getElementById('reuploadHint');
       if (allValid) {
         saveBtn.classList.remove('hidden');
-        saveBtn.disabled = false;
         saveBtn.className = 'px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition flex items-center gap-2';
         saveBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M16 3H8v4h8V3z"/></svg> Save to Database`;
+        // Gate: require duplicate_rules to be configured
+        const dr = schema?.duplicate_rules;
+        const dupOk = dr && (dr.mode === 'no_check' || (dr.metadata_keys && dr.metadata_keys.length > 0));
+        saveBtn.disabled = !dupOk;
+        if (!dupOk) {
+          saveBtn.title = 'Configure Duplicates rules in the sidebar first';
+          saveBtn.className = 'px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed flex items-center gap-2';
+        } else {
+          saveBtn.title = '';
+        }
         reuploadHint.classList.add('hidden');
         setState('validated');
       } else {
@@ -1777,11 +1872,92 @@
     function checkAllResolved() { }
 
     // ---------------------------------------------------------------------------
+    // Duplicate-mode confirmation modal
+    // ---------------------------------------------------------------------------
+    let _dupConfirmResolve = null;
+
+    function showDupConfirmModal() {
+      return new Promise(resolve => {
+        _dupConfirmResolve = resolve;
+        const body = document.getElementById('dupConfirmBody');
+        const dr = schema?.duplicate_rules || {};
+        const mode = dr.mode || 'no_check';
+
+        const modeLabels = {
+          no_check: { label: 'No duplicate check', color: 'blue', icon: '&#43;' },
+          metadata_unique: { label: 'Metadata unique', color: 'amber', icon: '&#8644;' },
+          full: { label: 'Full deduplication', color: 'red', icon: '&#8644;' },
+        };
+        const ml = modeLabels[mode] || modeLabels.no_check;
+
+        let html = `<div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-${ml.color}-100 text-${ml.color}-700">${ml.label}</span>
+        </div>`;
+
+        if (mode === 'no_check') {
+          html += `<div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p class="text-xs text-blue-800">Every submission creates <strong>new rows</strong> — nothing will be overwritten.</p>
+          </div>`;
+        } else if (mode === 'metadata_unique') {
+          const keys = (dr.metadata_keys || []).map(k => k.display_name || k.canonical_name);
+          html += `<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+            <p class="text-xs text-amber-800">Rows sharing the same metadata keys will be <strong>replaced</strong>.</p>
+            <div class="flex flex-wrap gap-1">
+              ${keys.map(k => `<span class="px-1.5 py-0.5 text-[10px] bg-white border border-amber-300 rounded text-amber-700 font-medium">${esc(k)}</span>`).join('')}
+            </div>
+            ${dr.per_user_submission ? '<p class="text-[10px] text-amber-600 mt-1">&#128100; Per-user: each user keeps their own submission.</p>' : ''}
+          </div>`;
+        } else if (mode === 'full') {
+          const mKeys = (dr.metadata_keys || []).map(k => k.display_name || k.canonical_name);
+          const dKeys = (dr.data_keys || []).map(k => k.display_name || k.canonical_name);
+          html += `<div class="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
+            <p class="text-xs text-red-800">Existing rows matching these keys will be <strong>replaced</strong>.</p>
+            <div>
+              <p class="text-[10px] text-red-600 font-medium mb-0.5">Metadata keys</p>
+              <div class="flex flex-wrap gap-1">
+                ${mKeys.map(k => `<span class="px-1.5 py-0.5 text-[10px] bg-white border border-red-300 rounded text-red-700 font-medium">${esc(k)}</span>`).join('')}
+              </div>
+            </div>
+            ${dKeys.length > 0 ? `<div>
+              <p class="text-[10px] text-red-600 font-medium mb-0.5">Data row keys</p>
+              <div class="flex flex-wrap gap-1">
+                ${dKeys.map(k => `<span class="px-1.5 py-0.5 text-[10px] bg-white border border-red-300 rounded text-red-700 font-medium">${esc(k)}</span>`).join('')}
+              </div>
+            </div>` : ''}
+            ${dr.per_user_submission ? '<p class="text-[10px] text-red-600 mt-1">&#128100; Per-user: each user keeps their own submission.</p>' : ''}
+          </div>`;
+        }
+
+        if (userEmail) {
+          html += `<div class="flex items-center gap-1.5 text-[10px] text-gray-500">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            Submitting as: <span class="font-medium text-gray-700">${esc(userEmail)}</span>
+          </div>`;
+        }
+
+        body.innerHTML = html;
+        document.getElementById('dupConfirmModal').classList.remove('hidden');
+      });
+    }
+
+    function closeDupConfirmModal(confirmed) {
+      document.getElementById('dupConfirmModal').classList.add('hidden');
+      if (_dupConfirmResolve) {
+        _dupConfirmResolve(confirmed);
+        _dupConfirmResolve = null;
+      }
+    }
+
+    // ---------------------------------------------------------------------------
     // Save to DB
     // ---------------------------------------------------------------------------
     document.getElementById('saveToDB').addEventListener('click', async () => {
       const btn = document.getElementById('saveToDB');
       const ingestionDef = PIPELINE_CONFIG.pipelines.ingestion;
+
+      // --- Show styled duplicate-mode confirmation modal ---
+      const confirmed = await showDupConfirmModal();
+      if (!confirmed) return;
 
       btn.disabled = true;
       btn.innerHTML = '<svg class="w-4 h-4 spin-slow" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Running ingestion pipeline...';
@@ -1794,7 +1970,7 @@
           btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M16 3H8v4h8V3z"/></svg> Save to Database';
           return;
         }
-        const ingestParams = { excel_file: uploadedFilePath };
+        const ingestParams = { excel_file: uploadedFilePath, contact_email: userEmail };
         let run;
         if (ingestionDef.webhookUrl) {
           run = await OpenHexaAPI.triggerPipelineWebhook(ingestionDef.webhookUrl, ingestParams);
@@ -1907,15 +2083,209 @@
       }
 
       schema = newSchema;
+      // Ensure duplicate_rules has a valid shape
+      if (!schema.duplicate_rules || typeof schema.duplicate_rules !== 'object') {
+        schema.duplicate_rules = { mode: 'no_check', per_user_submission: false, metadata_keys: [], data_keys: [] };
+      }
       const sub = document.getElementById('schemaSubtitle');
       if (sub) sub.textContent = 'schema_validation.json';
       renderSchema();
+    }
+
+    // ---------------------------------------------------------------------------
+    // Setup Wizard (admin-only guided flow after schema generation)
+    // ---------------------------------------------------------------------------
+
+    function startSetupWizard() {
+      if (!isAdmin || !schema) return;
+      wizardActive = true;
+      wizardStep = 1; // Step 0 (Upload) is already done — start at Duplicates
+      renderSchema();
+      applyWizardStep();
+    }
+
+    function dismissWizard() {
+      wizardActive = false;
+      wizardStep = 0;
+      renderSchema();
+    }
+
+    function wizardGoTo(step) {
+      if (step < 0 || step > 3) return;
+      // Validate before advancing past step 1 (Duplicates)
+      if (step > 1 && wizardStep <= 1) {
+        const dr = schema?.duplicate_rules;
+        const dupOk = dr && (dr.mode === 'no_check' || (dr.metadata_keys && dr.metadata_keys.length > 0));
+        if (!dupOk) {
+          showToast('Configure duplicate mode before proceeding', 'warning');
+          return;
+        }
+      }
+      wizardStep = step;
+      renderSchema();
+      applyWizardStep();
+    }
+
+    function wizardNext() { wizardGoTo(wizardStep + 1); }
+    function wizardBack() { wizardGoTo(wizardStep - 1); }
+
+    function applyWizardStep() {
+      if (!wizardActive) return;
+
+      if (wizardStep === 0) {
+        // Step 0: expand the Update Template section at the top of the sidebar
+        const body = document.getElementById('updateTemplateBody');
+        const arrow = document.getElementById('updateTemplateArrow');
+        if (body && body.classList.contains('hidden')) {
+          body.classList.remove('hidden');
+          if (arrow) arrow.style.transform = 'rotate(180deg)';
+        }
+        return;
+      }
+
+      if (wizardStep === 1) {
+        // Auto-open the Duplicates accordion
+        activeModuleKey = 'duplicate_rules';
+        const el = document.getElementById('acc-duplicate_rules');
+        if (el) {
+          document.querySelectorAll('.accordion-section').forEach(s => s.classList.remove('open'));
+          el.classList.add('open');
+          setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+        }
+      }
+      // Step 2 (Review): no auto-open — let the admin browse sections freely
+    }
+
+    async function wizardFinishSave() {
+      await exportSchema();
+      wizardActive = false;
+      wizardStep = 0;
+      showToast('Schema saved! You can now make ad-hoc modifications anytime.', 'success');
+      renderSchema();
+    }
+
+    function renderWizardBanner() {
+      if (!wizardActive || !isAdmin) return '';
+      let html = `<div class="wizard-banner bg-gradient-to-r from-pink-50 via-white to-indigo-50 border border-pink-200 rounded-xl p-3 mb-3 shadow-sm">`;
+      // Title row
+      html += `<div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center">
+            <svg class="w-3 h-3 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <span class="text-xs font-semibold text-gray-700">Template Setup</span>
+        </div>
+        <button onclick="dismissWizard()" class="text-gray-400 hover:text-gray-600 text-xs" title="Exit wizard and edit freely">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>`;
+      // Stepper dots
+      html += `<div class="flex items-center gap-0 mb-3">`;
+      WIZARD_STEPS.forEach((s, i) => {
+        const state = i < wizardStep ? 'completed' : i === wizardStep ? 'active' : 'pending';
+        html += `<div class="wizard-step ${state} flex flex-col items-center cursor-pointer" onclick="wizardGoTo(${i})" style="min-width:56px">
+          <div class="wizard-step-circle w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mb-0.5">
+            ${state === 'completed' ? '&#10003;' : (i + 1)}
+          </div>
+          <span class="text-[9px] ${state === 'active' ? 'text-pink-700 font-semibold' : 'text-gray-400'}">${s.label}</span>
+        </div>`;
+        if (i < WIZARD_STEPS.length - 1) {
+          html += `<div class="wizard-connector ${i < wizardStep ? 'done' : 'pending'}" style="margin-top:-10px"></div>`;
+        }
+      });
+      html += `</div>`;
+      // Step guidance text + navigation
+      const guidance = [
+        'Upload your Excel template and optional AI guidelines, then generate the schema.',
+        'Configure how duplicate submissions are detected. Choose a mode and select the key fields.',
+        '', // Step 2 uses a custom tutorial block below
+        'Review your configuration and save the schema to the workspace.',
+      ];
+      if (wizardStep !== 2) {
+        html += `<div class="bg-white rounded-lg border border-gray-100 p-2.5 mb-2">
+          <p class="text-[11px] text-gray-600 leading-relaxed">${guidance[wizardStep]}</p>
+        </div>`;
+      }
+      // Step 2: Review — tutorial guide
+      if (wizardStep === 2) {
+        html += `<div class="bg-white rounded-lg border border-indigo-100 p-3 mb-2 space-y-2">
+          <p class="text-[11px] text-gray-700 font-medium">Review each section below and adjust rules as needed:</p>
+          <ul class="text-[10px] text-gray-600 space-y-1.5 ml-1">
+            <li class="flex items-start gap-1.5">
+              <span class="text-indigo-400 mt-0.5">&#9679;</span>
+              <span><strong>Required / Optional</strong> — click a field to toggle whether it must be filled</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <span class="text-indigo-400 mt-0.5">&#9679;</span>
+              <span><strong>Field types & constraints</strong> — set type (text, number, date…), allowed values, min/max, regex patterns</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <span class="text-indigo-400 mt-0.5">&#9679;</span>
+              <span><strong>Header groups</strong> — for tables with dynamic columns, verify group rules and percentage constraints</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <span class="text-indigo-400 mt-0.5">&#9679;</span>
+              <span><strong>Formulas</strong> — add cross-column rules (e.g. "column A + column B = column C")</span>
+            </li>
+          </ul>
+          <p class="text-[10px] text-gray-400 italic">Open any section below to inspect and edit its fields. You can always come back later to refine rules.</p>
+        </div>`;
+      }
+      // Step 3: show config summary
+      if (wizardStep === 3 && schema) {
+        const dr = schema.duplicate_rules || {};
+        const modeLabels = { no_check: 'No check (append)', metadata_unique: 'Metadata unique', full: 'Full deduplication' };
+        const modeColors = { no_check: 'bg-blue-50 text-blue-700', metadata_unique: 'bg-amber-50 text-amber-700', full: 'bg-red-50 text-red-700' };
+        const modCount = Object.keys(schema.header_modules || {}).length + (schema.sections || []).length;
+        html += `<div class="bg-gray-50 rounded-lg border border-gray-200 p-2.5 mb-2 space-y-1.5">
+          <div class="flex items-center gap-2 text-[10px]">
+            <span class="text-gray-500">Template:</span>
+            <span class="font-medium text-gray-700">${esc(schema.template_file || 'n/a')}</span>
+          </div>
+          <div class="flex items-center gap-2 text-[10px]">
+            <span class="text-gray-500">Modules:</span>
+            <span class="font-medium text-gray-700">${modCount}</span>
+          </div>
+          <div class="flex items-center gap-2 text-[10px]">
+            <span class="text-gray-500">Duplicates:</span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-medium ${modeColors[dr.mode] || 'bg-gray-100 text-gray-600'}">${modeLabels[dr.mode] || dr.mode || 'not set'}</span>
+          </div>
+          ${dr.per_user_submission ? '<div class="text-[10px] text-gray-500">Per-user submission: <span class="text-green-600 font-medium">enabled</span></div>' : ''}
+        </div>`;
+      }
+      // Navigation buttons
+      html += `<div class="flex items-center justify-between">`;
+      if (wizardStep > 0) {
+        html += `<button onclick="wizardBack()" class="px-3 py-1 text-[11px] border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Back
+        </button>`;
+      } else {
+        html += `<span></span>`;
+      }
+      if (wizardStep < 3) {
+        html += `<button onclick="wizardNext()" class="px-3 py-1 text-[11px] bg-pink-600 text-white rounded-lg hover:bg-pink-700 font-medium flex items-center gap-1">
+          Next
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>`;
+      } else {
+        html += `<button onclick="wizardFinishSave()" class="px-3 py-1 text-[11px] bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Save Schema
+        </button>`;
+      }
+      html += `</div>`;
+      html += `</div>`;
+      return html;
     }
 
     function renderSchema() {
       if (!schema) return;
       const container = document.getElementById('schemaContainer');
       let html = '';
+
+      // Setup wizard banner (admin only, after schema generation)
+      html += renderWizardBanner();
 
       // Meta
       html += `<div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -2037,11 +2407,8 @@
         }
       }
 
-      // Validation config
-      html += renderAccordionSection('validation_config', 'Validation Config', () => {
-        const vc = schema.validation_config || {};
-        return `<pre class="text-[10px] text-gray-600 bg-gray-50 p-2 rounded overflow-x-auto whitespace-pre-wrap">${esc(JSON.stringify(vc, null, 2))}</pre>`;
-      });
+      // Duplicates / Entity ID
+      html += renderAccordionSection('duplicate_rules', 'Duplicates', () => renderDuplicatesContent(), { editable: isAdmin });
 
       // Add module button (admin only)
       if (isAdmin) {
@@ -2061,6 +2428,174 @@
     }
 
     // ---------------------------------------------------------------------------
+    // Duplicates accordion content
+    // ---------------------------------------------------------------------------
+
+    function _collectMetadataFieldOptions() {
+      // Gather canonical metadata fields from schema (v1 or v2)
+      const fields = [];
+      const td = (schema.table_definitions || {}).metadata || {};
+      for (const f of (td.fields || [])) {
+        if (f.canonical_name) fields.push({ canonical_name: f.canonical_name, display: f.expected || f.canonical_name.replace(/_/g, ' ') });
+      }
+      // v2: sections with layout=key_value or similar metadata
+      for (const sec of (schema.sections || [])) {
+        if (sec.layout === 'key_value' || sec.layout === 'metadata') {
+          for (const col of (sec.headers?.columns || [])) {
+            if (col.canonical_name) fields.push({ canonical_name: col.canonical_name, display: col.expected || col.canonical_name });
+          }
+        }
+      }
+      // v1: label_fields / value_fields
+      for (const [modKey, modDef] of Object.entries(schema.label_fields || {})) {
+        if (modKey.startsWith('_') || !modDef || typeof modDef !== 'object') continue;
+        for (const f of (modDef.fields || [])) {
+          if (f.canonical_name) fields.push({ canonical_name: f.canonical_name, display: f.expected || f.canonical_name });
+        }
+      }
+      return fields;
+    }
+
+    function _collectDataColumnOptions() {
+      // Gather canonical data columns from schema (v1 or v2)
+      const cols = [];
+      // v2: sections with layout=records
+      for (const sec of (schema.sections || [])) {
+        if (sec.layout !== 'records') continue;
+        for (const col of (sec.headers?.columns || [])) {
+          if (col.type === 'single' && col.canonical_name) {
+            cols.push({ canonical_name: col.canonical_name, display: col.expected || col.canonical_name });
+          } else if (col.type === 'group') {
+            for (const sub of (col.sub_columns || [])) {
+              if (sub.canonical_name) {
+                const parentCn = col.parent?.canonical_name || '';
+                const full = parentCn ? `${parentCn}__${sub.canonical_name}` : sub.canonical_name;
+                cols.push({ canonical_name: full, display: sub.expected || full });
+              }
+            }
+          }
+        }
+      }
+      // v1: header_modules columns
+      for (const [, modDef] of Object.entries(schema.header_modules || {})) {
+        if (!modDef.columns) continue;
+        const walk = (entries) => {
+          for (const col of entries) {
+            if (col.position === 'group') { walk(col.sub_columns || []); continue; }
+            if (col.canonical_name) cols.push({ canonical_name: col.canonical_name, display: col.expected || col.canonical_name });
+          }
+        };
+        walk(modDef.columns);
+      }
+      return cols;
+    }
+
+    function renderDuplicatesContent() {
+      const dr = schema.duplicate_rules || {};
+      const mode = dr.mode || 'no_check';
+      const perUser = dr.per_user_submission || false;
+      const metaKeys = new Set((dr.metadata_keys || []).map(k => k.canonical_name));
+      const dataKeys = new Set((dr.data_keys || []).map(k => k.canonical_name));
+
+      const metaOptions = _collectMetadataFieldOptions();
+      const dataOptions = _collectDataColumnOptions();
+
+      const disabled = !isAdmin ? 'disabled' : '';
+      let s = '';
+
+      // Mode selector
+      s += `<div class="mb-3">
+        <label class="text-[10px] font-medium text-gray-600 block mb-1">Mode</label>
+        <select ${disabled} onchange="updateDuplicateMode(this.value)" class="w-full text-xs border border-gray-200 rounded px-2 py-1">
+          <option value="no_check" ${mode === 'no_check' ? 'selected' : ''}>No check (append all)</option>
+          <option value="metadata_unique" ${mode === 'metadata_unique' ? 'selected' : ''}>Metadata unique</option>
+          <option value="full" ${mode === 'full' ? 'selected' : ''}>Full (metadata + data rows)</option>
+        </select>
+        <p class="text-[9px] text-gray-400 mt-0.5">${mode === 'no_check' ? 'Every submission creates new rows — no deduplication.'
+          : mode === 'metadata_unique' ? 'Submissions with same metadata key values replace previous ones.'
+          : 'Metadata key + data row key columns determine uniqueness.'}</p>
+      </div>`;
+
+      // Per-user submission toggle (only for metadata_unique / full)
+      if (mode !== 'no_check') {
+        s += `<div class="mb-3 flex items-center gap-2">
+          <input type="checkbox" id="dupPerUser" ${perUser ? 'checked' : ''} ${disabled}
+            onchange="if(isAdmin) schema.duplicate_rules.per_user_submission=this.checked" class="rounded text-pink-600">
+          <label for="dupPerUser" class="text-[10px] text-gray-600">One submission per user (uses contact email)</label>
+        </div>`;
+
+        // Metadata keys checkboxes
+        s += `<div class="mb-3">
+          <label class="text-[10px] font-medium text-gray-600 block mb-1">Metadata keys</label>`;
+        if (metaOptions.length === 0) {
+          s += `<p class="text-[9px] text-gray-400 italic">No metadata fields found in schema.</p>`;
+        } else {
+          for (const opt of metaOptions) {
+            const checked = metaKeys.has(opt.canonical_name) ? 'checked' : '';
+            s += `<label class="flex items-center gap-1.5 text-[10px] text-gray-600 py-0.5">
+              <input type="checkbox" ${checked} ${disabled} value="${esc(opt.canonical_name)}"
+                onchange="toggleDuplicateKey('metadata_keys','${esc(opt.canonical_name)}','${esc(opt.display)}',this.checked)"
+                class="rounded text-pink-600">
+              ${esc(opt.display)}
+            </label>`;
+          }
+        }
+        s += `</div>`;
+      }
+
+      // Data keys (only for full mode)
+      if (mode === 'full') {
+        s += `<div class="mb-3">
+          <label class="text-[10px] font-medium text-gray-600 block mb-1">Data row keys (optional)</label>`;
+        if (dataOptions.length === 0) {
+          s += `<p class="text-[9px] text-gray-400 italic">No data columns found in schema.</p>`;
+        } else {
+          for (const opt of dataOptions) {
+            const checked = dataKeys.has(opt.canonical_name) ? 'checked' : '';
+            s += `<label class="flex items-center gap-1.5 text-[10px] text-gray-600 py-0.5">
+              <input type="checkbox" ${checked} ${disabled} value="${esc(opt.canonical_name)}"
+                onchange="toggleDuplicateKey('data_keys','${esc(opt.canonical_name)}','${esc(opt.display)}',this.checked)"
+                class="rounded text-pink-600">
+              ${esc(opt.display)}
+            </label>`;
+          }
+        }
+        s += `</div>`;
+      }
+
+      return s;
+    }
+
+    function updateDuplicateMode(mode) {
+      if (!isAdmin) return;
+      schema.duplicate_rules.mode = mode;
+      if (mode === 'no_check') {
+        schema.duplicate_rules.metadata_keys = [];
+        schema.duplicate_rules.data_keys = [];
+        schema.duplicate_rules.per_user_submission = false;
+      }
+      // Re-render to show/hide sections
+      renderSchema();
+      // Re-open the duplicates accordion
+      activeModuleKey = 'duplicate_rules';
+      const el = document.getElementById('acc-duplicate_rules');
+      if (el) el.classList.add('open');
+    }
+
+    function toggleDuplicateKey(listName, canonicalName, display, checked) {
+      if (!isAdmin) return;
+      const list = schema.duplicate_rules[listName] || [];
+      if (checked) {
+        if (!list.find(k => k.canonical_name === canonicalName)) {
+          list.push({ canonical_name: canonicalName, display });
+        }
+      } else {
+        schema.duplicate_rules[listName] = list.filter(k => k.canonical_name !== canonicalName);
+      }
+      if (checked) schema.duplicate_rules[listName] = list;
+    }
+
+    // ---------------------------------------------------------------------------
     // Accordion section (replaces <details> for one-at-a-time behavior)
     // ---------------------------------------------------------------------------
     function renderAccordionSection(key, title, contentFn, opts = {}) {
@@ -2071,7 +2606,8 @@
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
       </button>`
         : '';
-      return `<div id="acc-${key}" class="accordion-section border border-gray-200 rounded-lg overflow-hidden ${isOpen ? 'open' : ''}">
+      const wizHL = wizardActive && wizardStep === 1 && key === 'duplicate_rules' ? 'ring-2 ring-pink-300 ring-offset-1' : '';
+      return `<div id="acc-${key}" class="accordion-section border border-gray-200 rounded-lg overflow-hidden ${isOpen ? 'open' : ''} ${wizHL}">
     <div class="px-3 py-2 bg-pink-50 text-pink-800 font-semibold text-xs cursor-pointer select-none flex items-center gap-1" onclick="toggleAccordion('${esc(key)}')">
       <span class="accordion-arrow text-[9px]">&#9654;</span>
       <span id="acc-title-${key}" class="flex-1">${title}</span>
@@ -4534,6 +5070,9 @@
 
         showToast('AI schema generation complete!', 'success');
 
+        // Launch the guided setup wizard for the admin
+        startSetupWizard();
+
         btn.disabled = false;
         btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Re-generate';
         btn.className = 'w-full px-2 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition flex items-center justify-center gap-1.5';
@@ -4569,6 +5108,20 @@
     // ---------------------------------------------------------------------------
     // Role check
     // ---------------------------------------------------------------------------
+    async function fetchUserEmail() {
+      try {
+        userEmail = await OpenHexaAPI.fetchMe();
+        const el = document.getElementById('userEmailDisplay');
+        const span = el?.querySelector('span');
+        if (span && userEmail) {
+          span.textContent = userEmail;
+          el.classList.remove('hidden');
+        }
+      } catch (e) {
+        console.warn('Could not fetch user email:', e);
+      }
+    }
+
     async function checkUserRole() {
       try {
         console.log('[checkUserRole] workspaceSlug:', PIPELINE_CONFIG.workspaceSlug, 'apiBase:', PIPELINE_CONFIG.apiBase);
@@ -5989,6 +6542,7 @@
       // Schema + role checks depend on workspaceSlug being resolved
       loadSchema();
       checkUserRole();
+      fetchUserEmail();
     })();
   </script>
 </body>
