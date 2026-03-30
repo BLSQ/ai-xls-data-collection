@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OPENHEXA AI - Excel Validation Pipeline</title>
+  <title>OPENHEXA AI - Excel Data Collection</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -552,10 +552,10 @@
           <textarea id="guidelinesText" rows="8"
             class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 resize-y focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
             placeholder="E.g.:
-- Rows 8-12 are a donor/funder group, not simple key-value pairs.
-- Columns after column Y contain province-level percentages that must sum to 100%.
-- The primary key column is the budget line label in column B.
-- Years are fixed in module 3, provinces are dynamic in module 8."></textarea>
+- Rows 8-12 are a repeating group, not simple key-value pairs.
+- Columns after column Y contain percentages that must sum to 100%.
+- The primary key column is the label in column B.
+- Some columns have fixed headers, others are dynamic (e.g. years, regions)."></textarea>
           <p class="text-[10px] text-gray-400 mt-1">These instructions take priority over the AI's own heuristics when
             there is a conflict.</p>
         </div>
@@ -782,7 +782,7 @@
               </svg>
             </div>
             <div>
-              <h1 class="text-lg font-semibold text-gray-900">AEDES AI - Excel Validation</h1>
+              <h1 class="text-lg font-semibold text-gray-900">OPENHEXA AI - Excel Data Collection</h1>
               <p class="text-xs text-gray-500">AI-powered structure detection, schema generation, validation & ingestion
               </p>
             </div>
@@ -817,7 +817,7 @@
                 </svg>
                 <span class="text-sm font-semibold text-gray-700" id="previewTitle">Excel Template Preview</span>
               </div>
-              <span class="text-[10px] text-gray-400" id="previewSubtitle">Select a module in the sidebar to
+              <span class="text-[10px] text-gray-400" id="previewSubtitle">Select a section in the sidebar to
                 preview</span>
             </div>
             <div id="previewBody" class="overflow-auto max-h-[calc(100vh-220px)] p-4">
@@ -826,7 +826,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                <p class="text-sm">Click a module in the sidebar to see its Excel layout</p>
+                <p class="text-sm">Click a section in the sidebar to see its Excel layout</p>
                 <p class="text-xs mt-1">The preview updates as you edit the schema</p>
               </div>
             </div>
@@ -1116,38 +1116,10 @@
     let userGuidelines = ''; // free-text guidelines for Gemini AI structure proposal
 
     // ---------------------------------------------------------------------------
-    // Example values from real template (Matrice collecte RDC)
+    // Example values — no hardcoded data; all examples come from the schema
     // ---------------------------------------------------------------------------
-    // Cell-specific examples extracted from the actual Excel file
-    const CELL_EXAMPLES = {
-      'C3': 'projet malaria', 'C4': 'malaria organization', 'G4': 'MALO',
-      'C5': '2021-01-07', 'G5': '65', 'C6': '9359102', 'C7': 'USD',
-      'C9': 'USAID', 'C10': '5000000', 'C11': 'Subvention', 'C12': 'Directe',
-      'D9': 'Fonds mondial', 'D10': '4359102', 'N9': 'Jean Dupont',
-      'N10': 'Coordonnateur', 'N11': 'jean@org.cd', 'N12': '+243812345678',
-    };
-    // Data row examples from row 17
-    const DATA_ROW_EXAMPLES = {
-      intitule_budgetaire: 'Renforcement du SNIS',
-      realise_total: '2200000', realise_2024: '2200000', realise_2025: '2014139',
-      previsionnel_total: '1700000', previsionnel_2026: '0', previsionnel_2027: '3714139', previsionnel_2028: '0',
-      mode_gestion: 'Unité de projet', mode_mise_en_oeuvre: 'Directe par le projet',
-      type_depense: 'Investissement', detail_type_depense: 'Invest. projet',
-      pilier: 'SIS', precision_pilier: '', thematique_principale: 'Palu', thematique_secondaire: '',
-      enfants_0_5: 'NA', enfants_5_14: '', adolescents_14_19: '', femmes_age_procreer: '',
-      femmes_enceintes: '', populations_autres: '', population_generale: '100', population_na: '',
-      niveau_central: '55', niveau_provincial: '45', niveau_operationnel: '', structures_communautaires: '', niveau_soins_na: '',
-      geo_national: '', geo_central: '',
-    };
-    // Province examples from DRC template
-    const PROVINCE_EXAMPLES = [
-      'Bas Uele', 'Equateur', 'Haut Katanga', 'Haut Lomami', 'Haut Uele', 'Ituri',
-      'Kasai', 'Kasai Central', 'Kasai Oriental', 'Kinshasa', 'Congo central',
-      'Kwango', 'Kwilu', 'Lomami', 'Lualaba', 'Mai Ndombe', 'Maniema',
-      'Mongala', 'Nord Kivu', 'Nord Ubangi', 'Sankuru', 'Sud Kivu',
-      'Sud Ubangi', 'Tanganyika', 'Tshopo', 'Tshuapa'
-    ];
-    const PROVINCE_PCT = [0, 0, 0, 0, 10, 15, 0, 15, 0, 0, 0, 0, 10, 15, 0, 15, 0, 0, 0, 0, 10, 15, 0, 15, 10, 15];
+    const CELL_EXAMPLES = {};
+    const DATA_ROW_EXAMPLES = {};
 
     function exampleValue(type, validation, context) {
       if (!type) type = 'string';
@@ -1160,10 +1132,10 @@
       if (type === 'date') return '2021-01-07';
       if (type === 'string') {
         if (v.enum) return v.enum[0];
-        if (v.regex === '^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$') return 'jean@org.cd';
-        if (v.regex === '^\\+?243[0-9]{9}$') return '+243812345678';
+        if (v.regex && v.regex.includes('@')) return 'user@example.org';
+        if (v.regex && v.regex.includes('\\+')) return '+1234567890';
         if (v.regex) return 'abc123';
-        return 'Texte exemple';
+        return 'Sample text';
       }
       return '';
     }
@@ -2502,7 +2474,7 @@
         }
       } else if (schema.label_fields?.[moduleKey]?.layout === 'grouped_key_value') {
         renderGroupedPreview(moduleKey, container, titleEl, subtitleEl);
-      } else if (moduleKey === 'module_1' || moduleKey === 'module_2') {
+      } else if (schema.label_fields?.[moduleKey] && schema.value_fields?.[moduleKey + '_values']) {
         renderMetadataPreview(moduleKey, container, titleEl, subtitleEl);
       } else if (moduleKey === 'validation_config') {
         titleEl.textContent = 'Validation Config';
@@ -2573,10 +2545,10 @@
       }
       html += '</tr>';
 
-      // Header row (row with "Bailleur(s)" label + column headers)
+      // Header row (group label + column headers)
       if (headerRow) {
         html += `<tr><td class="row-num">${headerRow}</td>`;
-        // Label column (B): section label like "Bailleur(s)"
+        // Label column (B): section group label
         const labelKey = labelMod && labelDefs ? Object.entries(labelDefs).find(([k, v]) => v.cell === `B${headerRow}` || (v.cell && parseInt(v.cell.replace(/\D/g, '')) === headerRow && v.cell.replace(/\d/g, '') === 'B')) : null;
         const headerLabel = labelKey ? labelKey[1].expected : displayName;
         html += `<td class="cell-label" style="font-weight:600">${esc(headerLabel)}</td>`;
@@ -2722,13 +2694,32 @@
       if (!labels) { container.innerHTML = ''; return; }
       const valIdx = buildValueIndex(values);
 
-      const modName = moduleKey === 'module_1' ? 'Module 1: Fiche d\'identit\u00e9' : 'Module 2: Personne ressource';
-      titleEl.textContent = modName;
-      subtitleEl.textContent = 'Rows ' + (moduleKey === 'module_1' ? '2-12' : '7-12');
+      // Derive module name from the schema title field, falling back to key
+      const modTitle = labels.title?.expected || moduleKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      titleEl.textContent = modTitle;
 
       // Collect all cells to determine grid bounds
       const cells = {}; // { "B3": { type, text } }
-      const bailleurCols = moduleKey === 'module_1' ? ['C', 'D', 'E', 'F', 'G', 'H', 'I'] : [];
+
+      // Detect grouped column definitions dynamically (e.g. bailleur_columns)
+      // by finding label_fields entries whose layout references this module
+      const groupedColKeys = Object.keys(schema.label_fields || {}).filter(k => {
+        const def = schema.label_fields[k];
+        return def && def.items && Array.isArray(def.items) && def.parent_module === moduleKey;
+      });
+
+      // Collect column letters used by grouped definitions
+      const groupedCols = [];
+      for (const gk of groupedColKeys) {
+        const gDef = schema.label_fields[gk];
+        if (gDef.items) {
+          gDef.items.forEach(item => {
+            cells[item.cell] = { type: 'label', text: item.expected };
+            const m = item.cell.match(/^([A-Z]+)/);
+            if (m && !groupedCols.includes(m[1])) groupedCols.push(m[1]);
+          });
+        }
+      }
 
       for (const [fk, fd] of Object.entries(labels)) {
         if (fk.startsWith('_')) continue;
@@ -2739,24 +2730,14 @@
         const valEntry = valIdx[labelRef];
         if (valEntry) {
           const vf = valEntry.field;
-          if (valEntry.type === 'bailleur') {
-            for (const col of bailleurCols) {
+          if (valEntry.type === 'bailleur' && groupedCols.length > 0) {
+            for (const col of groupedCols) {
               const cr = col + vf.row;
               cells[cr] = { type: 'value-example', text: schemaExample(vf, cr), scope: 'cell', vtype: vf.type || 'string', valSecKey: valueSecKey, valKey: valEntry.parentKey, rowKey: valEntry.key };
             }
           } else if (vf.cell) {
             cells[vf.cell] = { type: 'value-example', text: schemaExample(vf, vf.cell), scope: 'cell', vtype: vf.type || 'string', valSecKey: valueSecKey, valKey: valEntry.key };
           }
-        }
-      }
-
-      // Add bailleur column headers
-      if (moduleKey === 'module_1') {
-        const bcDef = schema.label_fields.bailleur_columns;
-        if (bcDef && bcDef.items) {
-          bcDef.items.forEach(item => {
-            cells[item.cell] = { type: 'label', text: item.expected };
-          });
         }
       }
 
@@ -2773,8 +2754,7 @@
         maxCol = Math.max(maxCol, c);
       }
 
-      // Expand to at least I for module_1
-      if (moduleKey === 'module_1') maxCol = Math.max(maxCol, colIndex('I'));
+      subtitleEl.textContent = minRow <= maxRow ? `Rows ${minRow}-${maxRow}` : '';
 
       // Build table
       let html = '<table class="excel-grid">';
@@ -2815,32 +2795,29 @@
 
       const titleText = modDef.title ? modDef.title.expected : modKey;
       titleEl.textContent = titleText.length > 60 ? titleText.substring(0, 60) + '...' : titleText;
-      subtitleEl.textContent = `Rows 14-16 + sample data (row 17)`;
 
       const pctRule = modDef.validation?.percentage_rule
         || (modDef.validation?.json_logic?.description || '').includes('100');
 
       // Build column map: sequential columns based on module structure
-      // row14: module title in start_column
-      // row15: individual header cells (fixed) or group parent
-      // row16: sub-columns within groups
       const startColIdx = colIndex(modDef.start_column || 'B');
 
-      // We need rows 14, 15, 16, 17 (sample)
+      // We'll compute sampleDataRow AFTER populating headers, by scanning actual grid keys
+      let sampleDataRow = null; // set below
+
       const grid = {}; // { "COL:ROW": { cls, text, colspan? } }
 
-      // Row 14: module title (clickable — selects all data cells in the module)
+      // Module title cell
       const titleCell = modDef.title?.cell;
       if (titleCell) {
         grid[titleCell] = { cls: 'cell-header-title', text: modDef.title.expected, scope: 'module', modKey: modKey };
       }
 
-      // Walk columns to fill rows 15, 16, and sample data 17
+      // ---- Pass 1: populate HEADER cells only (no data rows yet) ----
       let cursor = startColIdx;
-      const sampleRow = [];
-      const headerRow15 = [];
-      const headerRow16 = [];
       const colLetters = []; // track all column letters for data row
+      // Store column metadata for data-row pass
+      const colMeta = []; // { colLetter, canon, vtype, group?, example? }
 
       for (const col of modDef.columns) {
         const pos = col.position || 'fixed';
@@ -2851,8 +2828,7 @@
           const canon = col.canonical_name || '';
           grid[cl + col.row] = { cls: 'cell-header', text: col.expected, canonical: canon, scope: 'column', vtype: col.value_type || 'string', modKey: modKey };
           colLetters.push(cl);
-          const ex = col.example !== undefined && col.example !== '' ? col.example : (DATA_ROW_EXAMPLES[canon] || exampleValue(col.value_type || 'string', null, pctRule ? 'percent' : undefined));
-          grid[cl + '17'] = { cls: 'cell-data', text: ex, canonical: canon, scope: 'column', vtype: col.value_type || 'string', modKey: modKey };
+          colMeta.push({ cl, canon, vtype: col.value_type || 'string', example: col.example });
           cursor = ci + 1;
         } else if (pos === 'group') {
           const parent = col.parent || {};
@@ -2868,7 +2844,7 @@
             }
           }
           const groupCanon = parent.expected || '';
-          grid[parentCol + (parent.row || 15)] = { cls: 'cell-header-group', text: parent.expected, colspan: subCount, scope: 'group', group: groupCanon, modKey: modKey, groupStartCol: parentCol, groupEndCol: colLetter(cursor + subCount - 1) };
+          grid[parentCol + (parent.row || col.row || 15)] = { cls: 'cell-header-group', text: parent.expected, colspan: subCount, scope: 'group', group: groupCanon, modKey: modKey, groupStartCol: parentCol, groupEndCol: colLetter(cursor + subCount - 1) };
 
           for (const sub of subs) {
             if (sub.position === 'fixed') {
@@ -2877,8 +2853,7 @@
               const canon = sub.canonical_name || '';
               grid[scl + (sub.row || 16)] = { cls: 'cell-header', text: sub.expected || canon, canonical: canon, scope: 'column', vtype: sub.value_type || 'number', group: groupCanon, modKey: modKey };
               colLetters.push(scl);
-              const ex = sub.example !== undefined && sub.example !== '' ? sub.example : (DATA_ROW_EXAMPLES[canon] || exampleValue(sub.value_type || 'number', null, pctRule ? 'percent' : undefined));
-              grid[scl + '17'] = { cls: 'cell-data', text: ex, canonical: canon, scope: 'column', vtype: sub.value_type || 'number', group: groupCanon, modKey: modKey };
+              colMeta.push({ cl: scl, canon, vtype: sub.value_type || 'number', group: groupCanon, example: sub.example });
               subCursor++;
             } else if (sub.position === 'dynamic') {
               const dynCount = Math.max(sub.min_count || 2, 3);
@@ -2890,8 +2865,7 @@
                 const canonKey = prefix + '_' + normHeader;
                 grid[dcl + (sub.row || 16)] = { cls: 'cell-header', text: dynExamples[di]?.header || `dyn_${di + 1}`, canonical: canonKey, scope: 'column', vtype: sub.value_type || 'number', group: groupCanon, modKey: modKey };
                 colLetters.push(dcl);
-                const ex = sub.example !== undefined && sub.example !== '' ? sub.example : (DATA_ROW_EXAMPLES[canonKey] || dynExamples[di]?.dataValue || exampleValue(sub.value_type || 'number', null, pctRule ? 'percent' : undefined));
-                grid[dcl + '17'] = { cls: 'cell-data', text: ex, canonical: canonKey, scope: 'column', vtype: sub.value_type || 'number', group: groupCanon, modKey: modKey };
+                colMeta.push({ cl: dcl, canon: canonKey, vtype: sub.value_type || 'number', group: groupCanon, example: sub.example, dynValue: dynExamples[di]?.dataValue });
                 subCursor++;
               }
             }
@@ -2907,11 +2881,26 @@
             const canonKey = prefix + '_' + normHeader;
             grid[dcl + (col.row || 15)] = { cls: 'cell-header', text: dynExamples[di]?.header || `dyn_${di + 1}`, canonical: canonKey, scope: 'column', vtype: col.value_type || 'number', modKey: modKey };
             colLetters.push(dcl);
-            const ex = col.example !== undefined && col.example !== '' ? col.example : (DATA_ROW_EXAMPLES[canonKey] || dynExamples[di]?.dataValue || exampleValue(col.value_type || 'number', null, pctRule ? 'percent' : undefined));
-            grid[dcl + '17'] = { cls: 'cell-data', text: ex, canonical: canonKey, scope: 'column', vtype: col.value_type || 'number', modKey: modKey };
+            colMeta.push({ cl: dcl, canon: canonKey, vtype: col.value_type || 'number', example: col.example, dynValue: dynExamples[di]?.dataValue });
             cursor++;
           }
         }
+      }
+
+      // ---- Derive sampleDataRow from actual grid content ----
+      // Scan all grid keys to find the max header row, then place data 1 row below
+      let maxHeaderRow = 0;
+      for (const key of Object.keys(grid)) {
+        const m = key.match(/(\d+)$/);
+        if (m) maxHeaderRow = Math.max(maxHeaderRow, parseInt(m[1]));
+      }
+      sampleDataRow = maxHeaderRow + 1;
+
+      // ---- Pass 2: populate DATA cells at sampleDataRow ----
+      for (const cm of colMeta) {
+        const ex = cm.example !== undefined && cm.example !== '' ? cm.example
+          : (DATA_ROW_EXAMPLES[cm.canon] || cm.dynValue || exampleValue(cm.vtype, null, pctRule ? 'percent' : undefined));
+        grid[cm.cl + sampleDataRow] = { cls: 'cell-data', text: ex, canonical: cm.canon, scope: 'column', vtype: cm.vtype, group: cm.group || undefined, modKey: modKey };
       }
 
       // Determine grid bounds
@@ -2955,8 +2944,22 @@
       }
       html += '</tr>';
 
-      // Rows 14-17
-      for (let r = 14; r <= 17; r++) {
+      // Compute actual row range from all grid keys (headers + data)
+      let gridMinRow = Infinity, gridMaxRow = 0;
+      for (const key of Object.keys(grid)) {
+        const m = key.match(/(\d+)$/);
+        if (m) {
+          const rn = parseInt(m[1]);
+          gridMinRow = Math.min(gridMinRow, rn);
+          gridMaxRow = Math.max(gridMaxRow, rn);
+        }
+      }
+      if (gridMinRow === Infinity) gridMinRow = 1;
+
+      // Update subtitle with actual row range
+      subtitleEl.textContent = `Rows ${gridMinRow}-${maxHeaderRow} + sample data (row ${sampleDataRow})`;
+
+      for (let r = gridMinRow; r <= sampleDataRow; r++) {
         html += `<tr><td class="row-num">${r}</td>`;
         let c = minColIdx;
         while (c <= maxColIdx) {
@@ -2983,11 +2986,12 @@
         html += '</tr>';
       }
 
-      // Row 18: second sample row
-      html += `<tr><td class="row-num">18</td>`;
+      // Next sample row (after sampleDataRow)
+      const sampleRow2 = sampleDataRow + 1;
+      html += `<tr><td class="row-num">${sampleRow2}</td>`;
       for (let c = minColIdx; c <= maxColIdx; c++) {
-        const ref17 = colLetter(c) + '17';
-        if (grid[ref17]) {
+        const refSample = colLetter(c) + sampleDataRow;
+        if (grid[refSample]) {
           html += `<td class="cell-data" style="opacity:0.5">...</td>`;
         } else {
           html += `<td class="cell-empty"></td>`;
@@ -3139,21 +3143,18 @@
       const prefix = dynDef.canonical_prefix || 'dyn';
       const examples = [];
 
-      if (pattern === '^\\d{4}$') {
-        // Year columns from actual template
-        const isRealise = prefix.includes('realise');
-        const years = isRealise ? [2024, 2025] : [2026, 2027, 2028];
+      // Use schema-provided examples if available
+      if (dynDef.examples && Array.isArray(dynDef.examples)) {
         for (let i = 0; i < count; i++) {
-          const yr = years[i % years.length] || (2024 + i);
-          const dataKey = `${prefix}_${yr}`;
-          examples.push({ header: String(yr), dataValue: DATA_ROW_EXAMPLES[dataKey] || String(Math.floor(Math.random() * 500000)) });
+          const ex = dynDef.examples[i % dynDef.examples.length];
+          examples.push({ header: ex?.header || `${prefix}_${i + 1}`, dataValue: ex?.value || '' });
         }
-      } else if (prefix === 'geo_province' || pattern === '^.+$') {
-        // Use real DRC province names
+      } else if (pattern === '^\\d{4}$') {
+        // Year pattern — generate sequential years from current year
+        const baseYear = new Date().getFullYear();
         for (let i = 0; i < count; i++) {
-          const name = PROVINCE_EXAMPLES[i] || `Province ${i + 1}`;
-          const pct = PROVINCE_PCT[i] !== undefined ? String(PROVINCE_PCT[i]) : '0';
-          examples.push({ header: name, dataValue: pct });
+          const yr = baseYear + i;
+          examples.push({ header: String(yr), dataValue: '' });
         }
       } else {
         for (let i = 0; i < count; i++) {
@@ -3469,7 +3470,7 @@
 
       html += `<div>
     <label class="block text-[10px] font-medium text-gray-500 uppercase mb-1">Example Value</label>
-    <input type="text" id="fm_example" value="${esc(field.example || '')}" class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-emerald-50 text-emerald-700" placeholder="e.g. projet malaria, 5000000, 2021-01-07">
+    <input type="text" id="fm_example" value="${esc(field.example || '')}" class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-emerald-50 text-emerald-700" placeholder="e.g. Sample value, 5000000, 2024-01-01">
     <p class="text-[9px] text-gray-400 mt-1">Shown in preview and in error messages when type is wrong</p>
   </div>`;
 
@@ -3599,7 +3600,7 @@
       // Add label
       labels[newKey] = {
         cell: `B${newRow}`,
-        expected: 'Nouveau champ',
+        expected: 'New field',
       };
 
       // Add value
@@ -3607,23 +3608,24 @@
       schema.value_fields[valueSecKey][newKey + '_value'] = {
         cell: `C${newRow}`,
         label_ref: `${labelModKey}.${newKey}`,
-        label_display: 'Nouveau champ',
+        label_display: 'New field',
         type: 'string',
         example: '',
         required: false,
-        message: `Le champ 'Nouveau champ' (cellule C${newRow}) est optionnel.`,
+        message: `Field 'New field' (cell C${newRow}) is optional.`,
       };
 
-      // Also add to table_definitions if module_1
-      if (labelModKey === 'module_1') {
-        const td = schema.table_definitions?.module_1_programm;
-        if (td && td.fields) {
-          td.fields.push({
-            canonical_name: newKey,
-            label_cell: `B${newRow}`,
-            value_cell: `C${newRow}`,
-            type: 'string',
-          });
+      // Also add to matching table_definition if one references this module
+      if (schema.table_definitions) {
+        for (const td of Object.values(schema.table_definitions)) {
+          if (td && td.fields && td.source_module === labelModKey) {
+            td.fields.push({
+              canonical_name: newKey,
+              label_cell: `B${newRow}`,
+              value_cell: `C${newRow}`,
+              type: 'string',
+            });
+          }
         }
       }
 
@@ -3666,9 +3668,12 @@
       }
 
       // Remove from table_definitions if present
-      const td = schema.table_definitions?.module_1_programm;
-      if (td && td.fields) {
-        td.fields = td.fields.filter(f => f.canonical_name !== labelKey);
+      if (schema.table_definitions) {
+        for (const td of Object.values(schema.table_definitions)) {
+          if (td && td.fields) {
+            td.fields = td.fields.filter(f => f.canonical_name !== labelKey);
+          }
+        }
       }
 
       renderSchema();
@@ -3774,10 +3779,10 @@
     }
 
     function addNewModule() {
-      // Find next module number
+      // Find next module number dynamically from existing modules
       const existing = Object.keys(schema.header_modules || {}).filter(k => k.startsWith('module_'));
       const nums = existing.map(k => parseInt(k.replace('module_', ''))).filter(n => !isNaN(n));
-      const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 9;
+      const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 1;
       const modKey = `module_${nextNum}`;
 
       // Determine the next available column for the title
@@ -3799,23 +3804,24 @@
       const titleCell = `${startCol}14`;
 
       // Add to label_fields
+      if (!schema.label_fields) schema.label_fields = {};
       if (!schema.label_fields.module_headers_row14) schema.label_fields.module_headers_row14 = {};
       schema.label_fields.module_headers_row14[modKey] = {
         cell: titleCell,
-        expected: `Module ${nextNum}: Nouveau module`,
+        expected: `Module ${nextNum}: New module`,
       };
 
       // Add to header_modules
       if (!schema.header_modules) schema.header_modules = {};
       schema.header_modules[modKey] = {
-        title: { cell: titleCell, expected: `Module ${nextNum}: Nouveau module` },
+        title: { cell: titleCell, expected: `Module ${nextNum}: New module` },
         start_column: startCol,
         columns: [
           {
             position: 'fixed',
             column: startCol,
             row: 15,
-            expected: 'Colonne 1',
+            expected: 'Column 1',
             canonical_name: `${modKey}_col1`,
             value_type: 'string',
             example: '',
