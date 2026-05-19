@@ -9,6 +9,16 @@ Pure functions — no side effects, no OpenHEXA dependency.
 
 from __future__ import annotations
 
+import math
+
+
+def _numeric_close(a, b) -> bool:
+    """Return True if both values are numeric and approximately equal."""
+    try:
+        return math.isclose(float(a), float(b), rel_tol=1e-9, abs_tol=1e-6)
+    except (TypeError, ValueError):
+        return False
+
 
 def evaluate_json_logic(rule, data):
     """Evaluate a JsonLogic rule dictionary against a data context.
@@ -47,17 +57,29 @@ def evaluate_json_logic(rule, data):
     arguments = [evaluate_json_logic(arg, data) for arg in raw_arguments]
 
     if operator == "==":
-        return arguments[0] == arguments[1] if len(arguments) >= 2 else False
+        if len(arguments) < 2:
+            return False
+        if _numeric_close(arguments[0], arguments[1]):
+            return True
+        return arguments[0] == arguments[1]
     if operator == "!=":
-        return arguments[0] != arguments[1] if len(arguments) >= 2 else True
+        if len(arguments) < 2:
+            return True
+        if _numeric_close(arguments[0], arguments[1]):
+            return False
+        return arguments[0] != arguments[1]
     if operator == ">":
-        return float(arguments[0]) > float(arguments[1])
+        a, b = float(arguments[0]), float(arguments[1])
+        return a > b and not math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-6)
     if operator == ">=":
-        return float(arguments[0]) >= float(arguments[1])
+        a, b = float(arguments[0]), float(arguments[1])
+        return a > b or math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-6)
     if operator == "<":
-        return float(arguments[0]) < float(arguments[1])
+        a, b = float(arguments[0]), float(arguments[1])
+        return a < b and not math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-6)
     if operator == "<=":
-        return float(arguments[0]) <= float(arguments[1])
+        a, b = float(arguments[0]), float(arguments[1])
+        return a < b or math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-6)
     if operator == "+":
         return sum(float(a) for a in arguments if a is not None)
     if operator == "-":
