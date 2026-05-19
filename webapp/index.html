@@ -1223,8 +1223,8 @@
     let activeSheet = null;
     let activeModuleKey = null; // which sidebar accordion section is open
     let dragSource = null; // { modKey, path } for column drag-and-drop
-    let isAdmin = false;  // true if current user has workspace admin permissions
-    let isEditor = false; // true if user has update permission (but not necessarily admin)
+    let isAdmin = false;  // true if user has update+delete permissions (full admin)
+    let isEditor = false; // true if user has update-only permissions (Program role)
     let userGuidelines = ''; // free-text guidelines for Gemini AI structure proposal
     let userEmail = '';   // logged-in user's email (fetched via GraphQL)
 
@@ -1319,38 +1319,25 @@
     }
     const _detected = detectFromUrl();
 
-    // Async workspace slug discovery via GraphQL (called during init if slug not found from URL)
-    async function detectWorkspaceSlug() {
+    // Detect workspace slug via the webapp proxy's pipelines query.
+    // The new proxy exposes pipelines with workspace info — no need for webapps/workspaces queries.
+    async function detectWorkspaceSlugFromPipelines() {
       try {
-        const resp = await fetch('/graphql/Workspaces/', {
+        const resp = await fetch('/graphql/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
-            operationName: 'Workspaces',
-            query: `query Workspaces { workspaces(page: 1, perPage: 100) { items { slug name } } }`,
-            variables: {},
+            query: `{ pipelines(page: 1, perPage: 1) { items { workspace { slug } } } }`,
           }),
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const result = await resp.json();
-        const items = result.data?.workspaces?.items || [];
-        console.log('[detectWorkspaceSlug] found workspaces:', items.map(w => w.slug));
-        if (items.length === 1) {
-          return items[0].slug;
-        } else if (items.length > 1) {
-          // Check localStorage for last-visited hint (may have been set in a same-origin context)
-          const lastVisited = localStorage.getItem('last-visited-workspace');
-          if (lastVisited && items.some(w => w.slug === lastVisited)) {
-            console.log('[detectWorkspaceSlug] using last-visited-workspace:', lastVisited);
-            return lastVisited;
-          }
-          // Return first workspace as fallback — user can change in settings
-          console.log('[detectWorkspaceSlug] multiple workspaces, using first:', items[0].slug);
-          return items[0].slug;
-        }
+        const slug = result.data?.pipelines?.items?.[0]?.workspace?.slug || '';
+        console.log('[detectWorkspaceSlugFromPipelines] slug:', slug);
+        return slug;
       } catch (e) {
-        console.warn('[detectWorkspaceSlug] GraphQL query failed:', e);
+        console.warn('[detectWorkspaceSlugFromPipelines] failed:', e);
       }
       return '';
     }
@@ -1406,7 +1393,8 @@
       },
 
       async graphql(operationName, query, variables) {
-        const url = this._apiUrl(`/graphql/${operationName}/`);
+        // Webapp proxy: single /graphql/ endpoint, no operation name in path
+        const url = '/graphql/';
         console.log(`[GraphQL] ${operationName} → ${url}`);
         const resp = await fetch(
           url,
@@ -1414,7 +1402,7 @@
             method: 'POST',
             credentials: 'include',
             headers: this._headers(),
-            body: JSON.stringify({ operationName, query: query.trim(), variables }),
+            body: JSON.stringify({ query: query.trim(), variables }),
           }
         );
         if (!resp.ok) throw new Error(`GraphQL ${operationName} failed: ${resp.status}`);
@@ -1524,21 +1512,33 @@
         return result.data?.me?.user?.email || '';
       },
 
-      // Check if current user has admin permissions on the workspace
-      async checkWorkspacePermissions() {
-        const query = `
-          query WorkspacePermissions($slug: String!) {
-            workspace(slug: $slug) {
-              permissions {
-                update
-                manageMembers
-              }
-            }
-          }`;
-        const result = await this.graphql('WorkspacePermissions', query, {
-          slug: PIPELINE_CONFIG.workspaceSlug,
-        });
-        return result.data?.workspace?.permissions || {};
+      // Check workspace permissions to determine user role.
+      // Admin = update+delete, Program = update only, No access = no update.
+      async checkWorkspacePermissions(slug) {
+        const query = `query CheckPerms($slug: String!) {
+          workspace(slug: $slug) {
+            slug
+            permissions { update delete }
+          }
+        }`;
+        try {
+          const resp = await fetch('/graphql/', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query, variables: { slug } }),
+          });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const result = await resp.json();
+          console.log('[checkWorkspacePermissions] result:', JSON.stringify(result));
+          const perms = result.data?.workspace?.permissions;
+          if (perms && typeof perms.update === 'boolean') {
+            return { canUpdate: perms.update, canDelete: !!perms.delete };
+          }
+        } catch (e) {
+          console.warn('[checkWorkspacePermissions] failed:', e);
+        }
+        return {};
       },
 
       // Get a presigned download URL for a bucket object
@@ -1803,7 +1803,7 @@
         const dupOk = dr && (dr.mode === 'no_check' || (dr.metadata_keys && dr.metadata_keys.length > 0));
         saveBtn.disabled = !dupOk;
         if (!dupOk) {
-          saveBtn.title = 'Configure Duplicates rules in the sidebar first';
+          saveBtn.title = isAdmin ? 'Configure Duplicates rules in the sidebar first' : 'An admin must configure duplicate rules before data can be saved';
           saveBtn.className = 'px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed flex items-center gap-2';
         } else {
           saveBtn.title = '';
@@ -3596,26 +3596,27 @@
       const jsonLogicDef = validation.json_logic;
       const pctRule = validation.percentage_rule;
 
-      // Collect per-column validations (enum, constraints)
+      // Collect per-column validations (enum, constraints) with deletion paths
       const colValidations = [];
       let cursor = colIndex(modDef.start_column || 'B');
       for (const col of (modDef.columns || [])) {
         const pos = col.position || 'fixed';
         if (pos === 'fixed') {
           const cl = col.column || colLetter(cursor);
+          const canonical = col.canonical_name || '';
           const colVal = col.validation || {};
           const entries = [];
           if (colVal.enum && colVal.enum.length > 0) {
-            entries.push({ type: 'enum', values: colVal.enum });
+            entries.push({ type: 'enum', values: colVal.enum, deletePath: `col.${canonical}.${cl}.enum` });
           }
           if (colVal.conditional_enum) {
-            entries.push({ type: 'conditional_enum', condEnum: colVal.conditional_enum });
+            entries.push({ type: 'conditional_enum', condEnum: colVal.conditional_enum, deletePath: `col.${canonical}.${cl}.conditional_enum` });
           }
-          if (colVal.min !== undefined) entries.push({ type: 'constraint', text: `min: ${colVal.min}` });
-          if (colVal.max !== undefined) entries.push({ type: 'constraint', text: `max: ${colVal.max}` });
-          if (colVal.regex) entries.push({ type: 'constraint', text: `regex: ${colVal.regex}` });
+          if (colVal.min !== undefined) entries.push({ type: 'constraint', text: `min: ${colVal.min}`, deletePath: `col.${canonical}.${cl}.min` });
+          if (colVal.max !== undefined) entries.push({ type: 'constraint', text: `max: ${colVal.max}`, deletePath: `col.${canonical}.${cl}.max` });
+          if (colVal.regex) entries.push({ type: 'constraint', text: `regex: ${colVal.regex}`, deletePath: `col.${canonical}.${cl}.regex` });
           if (entries.length > 0) {
-            colValidations.push({ column: cl, header: col.expected || col.canonical_name || '', entries });
+            colValidations.push({ column: cl, header: col.expected || canonical, entries });
           }
           cursor = colIndex(cl) + 1;
         } else if (pos === 'group') {
@@ -3623,20 +3624,23 @@
           for (const sub of subs) {
             if (sub.position === 'fixed') {
               const scl = colLetter(cursor);
+              const parentCanon = col.parent?.canonical_name || '';
+              const subCanon = sub.canonical_name || '';
+              const fullCanon = parentCanon ? `${parentCanon}__${subCanon}` : subCanon;
               const subVal = sub.validation || {};
               const entries = [];
               if (subVal.enum && subVal.enum.length > 0) {
-                entries.push({ type: 'enum', values: subVal.enum });
+                entries.push({ type: 'enum', values: subVal.enum, deletePath: `col.${fullCanon}.${scl}.enum` });
               }
               if (subVal.conditional_enum) {
-                entries.push({ type: 'conditional_enum', condEnum: subVal.conditional_enum });
+                entries.push({ type: 'conditional_enum', condEnum: subVal.conditional_enum, deletePath: `col.${fullCanon}.${scl}.conditional_enum` });
               }
-              if (subVal.min !== undefined) entries.push({ type: 'constraint', text: `min: ${subVal.min}` });
-              if (subVal.max !== undefined) entries.push({ type: 'constraint', text: `max: ${subVal.max}` });
-              if (subVal.regex) entries.push({ type: 'constraint', text: `regex: ${subVal.regex}` });
+              if (subVal.min !== undefined) entries.push({ type: 'constraint', text: `min: ${subVal.min}`, deletePath: `col.${fullCanon}.${scl}.min` });
+              if (subVal.max !== undefined) entries.push({ type: 'constraint', text: `max: ${subVal.max}`, deletePath: `col.${fullCanon}.${scl}.max` });
+              if (subVal.regex) entries.push({ type: 'constraint', text: `regex: ${subVal.regex}`, deletePath: `col.${fullCanon}.${scl}.regex` });
               if (entries.length > 0) {
                 const parentName = col.parent?.expected || '';
-                colValidations.push({ column: scl, header: `${parentName} > ${sub.expected || sub.canonical_name || ''}`, entries });
+                colValidations.push({ column: scl, header: `${parentName} > ${sub.expected || subCanon}`, entries });
               }
               cursor++;
             } else if (sub.position === 'dynamic') {
@@ -3662,22 +3666,44 @@
     <div class="p-3 space-y-3 bg-white">`;
 
       // Module-level formula
+      const modPath = `module.${modKey}`;
       if (jsonLogicDef) {
+        const jlDeletePath = Array.isArray(jsonLogicDef) ? null : `${modPath}.json_logic`;
         html += `<div class="rounded-lg bg-indigo-50 border border-indigo-200 p-3">
-      <div class="flex items-center gap-2 mb-1.5">
-        <span class="text-[10px] font-semibold text-indigo-700 uppercase">Module Formula</span>
-        <span class="tag bg-indigo-100 text-indigo-600 border border-indigo-200">${esc(jsonLogicDef.description || 'JsonLogic')}</span>
+      <div class="flex items-center justify-between mb-1.5">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-semibold text-indigo-700 uppercase">Module Formula</span>
+          <span class="tag bg-indigo-100 text-indigo-600 border border-indigo-200">${esc(Array.isArray(jsonLogicDef) ? 'JsonLogic (multiple)' : (jsonLogicDef.description || 'JsonLogic'))}</span>
+        </div>
+        ${isAdmin && jlDeletePath ? `<button onclick="removeExistingRule('${esc(jlDeletePath)}')" class="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition" title="Delete this rule">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>` : ''}
       </div>
-      ${validation.message ? `<p class="text-xs text-indigo-600 mb-2">${esc(validation.message)}</p>` : ''}
-      <details><summary class="text-[9px] text-indigo-400 cursor-pointer hover:text-indigo-600">View JsonLogic rule</summary>
-        <pre class="text-[10px] text-indigo-600 mt-1 bg-white rounded p-2 overflow-x-auto border border-indigo-100 max-h-40">${esc(JSON.stringify(jsonLogicDef.rule, null, 2))}</pre>
+      ${validation.message ? `<p class="text-xs text-indigo-600 mb-2">${esc(validation.message)}</p>` : ''}`;
+        if (Array.isArray(jsonLogicDef)) {
+          jsonLogicDef.forEach((entry, idx) => {
+            html += `<div class="flex items-center justify-between mb-1">
+          <span class="text-[10px] text-indigo-600">${esc(entry.description || 'rule ' + (idx + 1))}</span>
+          ${isAdmin ? `<button onclick="removeExistingRule('${esc(modPath + '.json_logic[' + idx + ']')}')" class="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition" title="Delete this rule">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>` : ''}
+        </div>`;
+          });
+        }
+        html += `<details><summary class="text-[9px] text-indigo-400 cursor-pointer hover:text-indigo-600">View JsonLogic rule</summary>
+        <pre class="text-[10px] text-indigo-600 mt-1 bg-white rounded p-2 overflow-x-auto border border-indigo-100 max-h-40">${esc(JSON.stringify(Array.isArray(jsonLogicDef) ? jsonLogicDef.map(e => e.rule) : jsonLogicDef.rule, null, 2))}</pre>
       </details>
     </div>`;
       } else if (pctRule) {
         html += `<div class="rounded-lg bg-amber-50 border border-amber-200 p-3">
-      <div class="flex items-center gap-2 mb-1">
-        <span class="text-[10px] font-semibold text-amber-700 uppercase">Module Formula</span>
-        <span class="tag bg-amber-100 text-amber-600 border border-amber-200">${esc(pctRule)}</span>
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-semibold text-amber-700 uppercase">Module Formula</span>
+          <span class="tag bg-amber-100 text-amber-600 border border-amber-200">${esc(pctRule)}</span>
+        </div>
+        ${isAdmin ? `<button onclick="removeExistingRule('${esc(modPath + '.percentage_rule')}')" class="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition" title="Delete this rule">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>` : ''}
       </div>
       ${validation.message ? `<p class="text-xs text-amber-600">${esc(validation.message)}</p>` : ''}
     </div>`;
@@ -3694,14 +3720,20 @@
           <span class="text-xs text-gray-600 truncate">${esc(cv.header)}</span>
         </div>`;
           for (const entry of cv.entries) {
+            const deleteBtn = isAdmin && entry.deletePath ? `<button onclick="removeExistingRule('${esc(entry.deletePath)}')" class="ml-auto text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition flex-shrink-0" title="Delete this rule">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>` : '';
             if (entry.type === 'enum') {
-              html += `<div class="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+              html += `<div class="flex items-start gap-1">
+            <div class="flex-1"><div class="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
             ${entry.values.map(v => `<span class="tag bg-white text-emerald-700 border border-emerald-300 shadow-sm text-[10px]">${esc(v)}</span>`).join('')}
           </div>
-          <p class="text-[9px] text-emerald-500 mt-1">${entry.values.length} allowed value(s)</p>`;
+          <p class="text-[9px] text-emerald-500 mt-1">${entry.values.length} allowed value(s)</p></div>
+          ${deleteBtn}</div>`;
             } else if (entry.type === 'conditional_enum') {
               const ce = entry.condEnum;
               const parentKeys = Object.keys(ce.values_by_parent || {});
+              html += `<div class="flex items-start gap-1"><div class="flex-1">`;
               html += `<div class="text-[10px] text-amber-700 font-medium mb-1">Conditional on col <code class="bg-amber-100 px-1 rounded">${esc(ce.depends_on_column || '?')}</code></div>`;
               for (const pk of parentKeys) {
                 const vals = ce.values_by_parent[pk] || [];
@@ -3709,8 +3741,9 @@
               <span class="text-[9px] text-amber-500">(${vals.length})</span>:
               <span class="text-[10px] text-gray-600">${vals.slice(0, 4).map(v => esc(v)).join(', ')}${vals.length > 4 ? ', ...' : ''}</span></div>`;
               }
+              html += `</div>${deleteBtn}</div>`;
             } else {
-              html += `<div class="text-xs text-gray-600">${esc(entry.text)}</div>`;
+              html += `<div class="flex items-center gap-1"><span class="text-xs text-gray-600 flex-1">${esc(entry.text)}</span>${deleteBtn}</div>`;
             }
           }
           html += `</div>`;
@@ -5178,24 +5211,64 @@
     }
 
     async function checkUserRole() {
+      let noAccess = false;
       try {
-        console.log('[checkUserRole] workspaceSlug:', PIPELINE_CONFIG.workspaceSlug, 'apiBase:', PIPELINE_CONFIG.apiBase);
-        const perms = await OpenHexaAPI.checkWorkspacePermissions();
-        console.log('[checkUserRole] permissions response:', perms);
-        // Only workspace admins (manageMembers) can edit schema.
-        // Editors have update=true but should NOT be able to modify the template.
-        isAdmin = !!perms.manageMembers;
-        isEditor = !!perms.update && !isAdmin;
-        console.log('[checkUserRole] isAdmin:', isAdmin, 'isEditor:', isEditor);
+        const slug = PIPELINE_CONFIG.workspaceSlug;
+        if (!slug) {
+          console.warn('[checkUserRole] No workspace slug — defaulting to admin');
+          isAdmin = true; isEditor = false;
+        } else {
+          const result = await OpenHexaAPI.checkWorkspacePermissions(slug);
+          console.log('[checkUserRole] permissions result:', result);
+          if (typeof result.canUpdate === 'boolean') {
+            if (!result.canUpdate) {
+              // No update permission — no access to the app
+              isAdmin = false; isEditor = false; noAccess = true;
+            } else if (result.canUpdate && result.canDelete) {
+              // Update + delete = Admin
+              isAdmin = true; isEditor = false;
+            } else {
+              // Update but no delete = Program (editor)
+              isAdmin = false; isEditor = true;
+            }
+          } else {
+            console.warn('[checkUserRole] permissions not available — defaulting to admin');
+            isAdmin = true; isEditor = false;
+          }
+        }
+        console.log('[checkUserRole] isAdmin:', isAdmin, 'isEditor:', isEditor, 'noAccess:', noAccess);
       } catch (e) {
-        console.warn('Could not check workspace permissions — defaulting to viewer:', e);
-        isAdmin = false;
+        console.warn('[checkUserRole] failed — defaulting to admin:', e);
+        isAdmin = true;
         isEditor = false;
       }
-      applyRoleUI();
+      applyRoleUI(noAccess);
     }
 
-    function applyRoleUI() {
+    function applyRoleUI(noAccess = false) {
+      // No-access overlay — block the entire app
+      let overlay = document.getElementById('noAccessOverlay');
+      if (noAccess) {
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'noAccessOverlay';
+          overlay.className = 'fixed inset-0 z-[9999] bg-white/90 flex items-center justify-center';
+          overlay.innerHTML = `
+            <div class="text-center max-w-md px-6">
+              <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+              <h2 class="text-xl font-semibold text-gray-700 mb-2">Access Restricted</h2>
+              <p class="text-gray-500">Please ask a workspace admin to grant you the appropriate permissions to use this application.</p>
+            </div>`;
+          document.body.appendChild(overlay);
+        }
+        return; // Don't apply any other UI — app is blocked
+      } else if (overlay) {
+        overlay.remove();
+      }
+
       // Admin-only elements
       const adminEls = [
         'updateTemplateSection',  // Update Template accordion
@@ -5211,20 +5284,15 @@
       const saveBtn = document.getElementById('schemaSaveBtn');
       if (saveBtn) saveBtn.style.display = isAdmin ? '' : 'none';
 
-      // Download template button — visible to everyone (handled separately)
-
-      // Role badge in sidebar header — show Admin / Editor / Viewer
+      // Role badge — Admin or Program
       const badge = document.getElementById('roleBadge');
       if (badge) {
         if (isAdmin) {
           badge.textContent = 'Admin';
           badge.className = 'px-1.5 py-0.5 text-[9px] rounded-full bg-pink-100 text-pink-700 font-medium';
         } else if (isEditor) {
-          badge.textContent = 'Editor';
+          badge.textContent = 'Program';
           badge.className = 'px-1.5 py-0.5 text-[9px] rounded-full bg-blue-100 text-blue-700 font-medium';
-        } else {
-          badge.textContent = 'Viewer';
-          badge.className = 'px-1.5 py-0.5 text-[9px] rounded-full bg-gray-100 text-gray-500 font-medium';
         }
       }
 
@@ -6581,16 +6649,15 @@
     // ---------------------------------------------------------------------------
     // Init
     // ---------------------------------------------------------------------------
-    // apiBase is always '' (relative paths — same origin).
-    // workspaceSlug is auto-detected: first from URL, then via GraphQL workspace listing.
-    // loadPipelineConfig can override with saved config from workspace/localStorage.
+    // Webapp proxy: all API calls go to /graphql/ (same origin, cookie auth).
+    // workspaceSlug is discovered from pipelines query or saved config.
     (async () => {
-      // If URL-based detection didn't find the slug, try GraphQL discovery
+      // Try URL-based detection first (works outside iframe)
       if (!PIPELINE_CONFIG.workspaceSlug) {
-        const discovered = await detectWorkspaceSlug();
-        if (discovered) {
-          PIPELINE_CONFIG.workspaceSlug = discovered;
-          console.log('[init] workspaceSlug discovered via API:', discovered);
+        const fromPipelines = await detectWorkspaceSlugFromPipelines();
+        if (fromPipelines) {
+          PIPELINE_CONFIG.workspaceSlug = fromPipelines;
+          console.log('[init] workspaceSlug from pipelines:', fromPipelines);
         }
       }
 

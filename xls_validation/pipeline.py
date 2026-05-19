@@ -161,9 +161,7 @@ def _build_report(
                 continue
 
         # Validate sheet
-        sheet_issues, column_map, module_columns = _validate_sheet(
-            worksheet, schema, config
-        )
+        sheet_issues, column_map, module_columns = _validate_sheet(worksheet, schema, config)
 
         # Find data rows
         data_start_row = _get_data_start_row(schema)
@@ -174,7 +172,11 @@ def _build_report(
 
         # Build extraction guide for this sheet
         guide_builder = ExtractionGuideBuilder(
-            schema, column_map, module_columns, data_rows, grouped_info,
+            schema,
+            column_map,
+            module_columns,
+            data_rows,
+            grouped_info,
         )
         extraction_guide["sheets"][sheet_name] = guide_builder.build()
 
@@ -303,12 +305,12 @@ def _validate_sheet(
     if _has_sections(schema):
         # Sections-based schema — use RecordsValidator in sections mode
         records_sections = [
-            section
-            for section in schema.get("sections", [])
-            if section.get("layout") == "records"
+            section for section in schema.get("sections", []) if section.get("layout") == "records"
         ]
         records_validator = RecordsValidator(
-            worksheet, config, sections=records_sections,
+            worksheet,
+            config,
+            sections=records_sections,
         )
         issues.extend(records_validator.validate_structure())
         issues.extend(records_validator.validate_data())
@@ -329,7 +331,9 @@ def _validate_sheet(
     grouped_definitions = _extract_grouped_definitions(schema)
     if grouped_definitions:
         grouped_validator = GroupedKeyValueValidator(
-            worksheet, config, grouped_definitions,
+            worksheet,
+            config,
+            grouped_definitions,
         )
         issues.extend(grouped_validator.validate_data())
 
@@ -406,9 +410,7 @@ def _detect_grouped_columns(worksheet, schema: dict) -> dict:
                 continue
 
             section_key_clean = (
-                field_key.removesuffix("_values")
-                if field_key.endswith("_values")
-                else field_key
+                field_key.removesuffix("_values") if field_key.endswith("_values") else field_key
             )
             columns = field_definition["columns"]
             rows_definition = field_definition.get("rows", {})
@@ -468,17 +470,13 @@ def _log_summary(report: dict) -> None:
         f"{summary['total_sheets_skipped']} skipped"
     )
     if summary["total_errors"] > 0:
-        current_run.log_warning(
-            f"Found {summary['total_errors']} errors across all sheets"
-        )
+        current_run.log_warning(f"Found {summary['total_errors']} errors across all sheets")
     if summary["total_warnings"] > 0:
         current_run.log_warning(
             f"Found {summary['total_warnings']} warnings requiring confirmation"
         )
     if summary["total_errors"] == 0 and summary["total_warnings"] == 0:
-        current_run.log_info(
-            "All sheets passed validation with no errors or warnings."
-        )
+        current_run.log_info("All sheets passed validation with no errors or warnings.")
 
 
 if __name__ == "__main__":

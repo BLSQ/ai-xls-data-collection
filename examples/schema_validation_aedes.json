@@ -1,0 +1,300 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "description": "Validation schema for 'Predictions' sheet -- generated from structure_proposal.json.",
+  "sheet_name": "Predictions",
+  "label_fields": {
+    "module_headers_rowNone": {
+      "predictions_data": {
+        "cell": "A1",
+        "expected": "Geographic area"
+      }
+    }
+  },
+  "value_fields": {},
+  "header_modules": {
+    "_description": "Each module defines its own header columns independently. Columns can be 'fixed', 'dynamic', or 'group'.",
+    "mismatch_message_template": "L'en-tete en colonne {column} ('{actual_value}') ne correspond pas a la valeur attendue ('{expected}'). Confirmez-vous que cette colonne correspond bien a '{canonical_name}' ?",
+    "predictions_data": {
+      "title": {
+        "cell": "A1",
+        "expected": "Geographic area"
+      },
+      "start_column": "A",
+      "columns": [
+        {
+          "position": "group",
+          "parent": {
+            "row": 1,
+            "expected": "Geographic area",
+            "known_variants": []
+          },
+          "sub_columns": [
+            {
+              "position": "fixed",
+              "column": "A",
+              "row": 2,
+              "expected": "Province",
+              "canonical_name": "geographic_area_province",
+              "value_type": "string",
+              "example": "Kasai",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "B",
+              "row": 2,
+              "expected": "Zone de santé",
+              "canonical_name": "geographic_area_zone_de_sante",
+              "value_type": "string",
+              "example": "Banga Lubaka",
+              "required": true,
+              "known_variants": []
+            }
+          ]
+        },
+        {
+          "position": "group",
+          "parent": {
+            "row": 1,
+            "expected": "Population estimates (under 5 yo)",
+            "known_variants": []
+          },
+          "sub_columns": [
+            {
+              "position": "fixed",
+              "column": "C",
+              "row": 2,
+              "expected": "Total",
+              "canonical_name": "population_estimates_total",
+              "value_type": "number",
+              "example": "21156.08",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "D",
+              "row": 2,
+              "expected": "0-dose (penta)",
+              "canonical_name": "predictions_data_population_estimates_0_dose",
+              "value_type": "number",
+              "example": "2520.2",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "E",
+              "row": 2,
+              "expected": "0-dose (all)",
+              "canonical_name": "predictions_data_population_estimates_0_dose",
+              "value_type": "number",
+              "example": "1963.9",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "F",
+              "row": 2,
+              "expected": "BCG",
+              "canonical_name": "population_estimates_bcg",
+              "value_type": "number",
+              "example": "17867.59",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "G",
+              "row": 2,
+              "expected": "Rotavirus",
+              "canonical_name": "population_estimates_rotavirus",
+              "value_type": "number",
+              "example": "17906.52",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "H",
+              "row": 2,
+              "expected": "Varicella",
+              "canonical_name": "population_estimates_varicella",
+              "value_type": "number",
+              "example": "14434.92",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "I",
+              "row": 2,
+              "expected": "Polio",
+              "canonical_name": "population_estimates_polio",
+              "value_type": "number",
+              "example": "18866.15",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "J",
+              "row": 2,
+              "expected": "Pneumo",
+              "canonical_name": "population_estimates_pneumo",
+              "value_type": "number",
+              "example": "18439.34",
+              "required": true,
+              "known_variants": []
+            }
+          ]
+        },
+        {
+          "position": "group",
+          "parent": {
+            "row": 1,
+            "expected": "Probabilities",
+            "known_variants": []
+          },
+          "sub_columns": [
+            {
+              "position": "fixed",
+              "column": "K",
+              "row": 2,
+              "expected": "0-dose (penta)",
+              "canonical_name": "predictions_data_probabilities_0_dose",
+              "value_type": "number",
+              "example": "0.119124",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "L",
+              "row": 2,
+              "expected": "0-dose (all)",
+              "canonical_name": "predictions_data_probabilities_0_dose",
+              "value_type": "number",
+              "example": "0.092829",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "M",
+              "row": 2,
+              "expected": "BCG",
+              "canonical_name": "probabilities_bcg",
+              "value_type": "number",
+              "example": "0.844561",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "N",
+              "row": 2,
+              "expected": "Rotavirus",
+              "canonical_name": "probabilities_rotavirus",
+              "value_type": "number",
+              "example": "0.846401",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "O",
+              "row": 2,
+              "expected": "Varicella",
+              "canonical_name": "probabilities_varicella",
+              "value_type": "number",
+              "example": "0.682306",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "P",
+              "row": 2,
+              "expected": "Measles",
+              "canonical_name": "probabilities_measles",
+              "value_type": "number",
+              "example": "0.649707",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "Q",
+              "row": 2,
+              "expected": "Polio",
+              "canonical_name": "probabilities_polio",
+              "value_type": "number",
+              "example": "0.89176",
+              "required": true,
+              "known_variants": []
+            },
+            {
+              "position": "fixed",
+              "column": "R",
+              "row": 2,
+              "expected": "Pneumo",
+              "canonical_name": "probabilities_pneumo",
+              "value_type": "number",
+              "example": "0.871586",
+              "required": true,
+              "known_variants": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "table_definitions": {
+    "metadata": {
+      "_description": "Metadata table built from label-value pairs.",
+      "source": "metadata sections",
+      "fields": []
+    },
+    "records_data": {
+      "_description": "Data table built from data rows. Each row becomes a record.",
+      "header_row_start": 1,
+      "header_row_end": 2,
+      "data_row_start": 3,
+      "data_row_end": "dynamic",
+      "header_source": "header_modules",
+      "empty_row_terminates": true,
+      "row_validation": {
+        "geographic_area_zone_de_sante": {
+          "required": true,
+          "message": "Chaque ligne de donnees doit avoir un 'geographic_area_zone_de_sante'."
+        }
+      }
+    }
+  },
+  "validation_config": {
+    "_description": "Configuration for validation and header matching behavior.",
+    "label_comparison": {
+      "case_sensitive": false,
+      "strip_whitespace": true,
+      "strip_trailing_colon": true,
+      "normalize_accents": true
+    },
+    "header_matching": {
+      "strategy": "exact_then_variants_then_ask",
+      "on_mismatch": "warn_and_ask_confirmation",
+      "on_missing": "error"
+    },
+    "dynamic_columns": {
+      "_description": "Columns with position='dynamic' are matched by regex pattern. Canonical names are generated as '{canonical_prefix}_{normalized_value}'."
+    },
+    "data_rows": {
+      "start_row": 3,
+      "termination": "first_fully_empty_row"
+    }
+  },
+  "template_file": "/home/hexa/workspace/uploads/TEMPLATE_Predictions ImmuReach (2).xlsx"
+}
