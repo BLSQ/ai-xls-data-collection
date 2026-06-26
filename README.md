@@ -123,18 +123,38 @@ If you have a dashboard (e.g. built with ECharts/gridstack on OpenHEXA), paste i
 
 ### 5.2 Post-Ingestion Pipeline
 
-If you need to compute indicators, create derived tables, or run any custom logic after data is ingested:
+A post-ingestion pipeline runs automatically after each successful "Save to Database" action. Its role is to transform the raw ingested data (`program_metadata` + `program_data`) into derived, analysis-ready tables.
+
+To enable it:
 
 1. Check **Enable post-ingestion pipeline**
-2. Enter the **Pipeline code** (e.g. `my-indicators`)
+2. Enter the **Pipeline code** (e.g. `aedes-compute-indicators`)
 3. Optionally set a **Webhook URL** for faster triggering
 
-This pipeline will run automatically after each successful "Save to Database" action.
+**For the AEDES deployment, use the `aedes-compute-indicators` pipeline** (directory [`aedes-compute-indicators/`](aedes-compute-indicators/)). This pipeline builds all the derived tables that feed the **Superset dashboard**.
 
-**Typical use cases:**
-- Compute indicators from `program_data` → write to an `indicators` table
-- Generate aggregated tables optimised for the dashboard
-- Export data to external systems
+**What `aedes-compute-indicators` does:**
+
+It reads `program_metadata` and `program_data` from the workspace database, computes a set of indicator tables, and writes them to the target database.
+
+Tables produced:
+
+| Table | Description |
+|-------|-------------|
+| `program_metadata_compile` | `program_metadata` enriched with the computed project end date (`date_fin_du_projet = date_debut + duree_du_projet_en_mois`) |
+| `program_metadata_contribution_bailleurs` | One row per project × donor (the `donors_*` columns unpivoted into `bailleur` / `contribution`) |
+| `dim_date` | Date dimension built from project start/end dates, with French period labels (e.g. `Janvier 2025`) |
+| `program_data_compile` | `program_data` joined with the project metadata columns |
+| `program_data_pivot_realise_previsionnel` | `realise_*` / `previsionnel_*` amount columns unpivoted into long format (`type_realisation`, `date_mise_en_oeuvre`, `montant_depense`) |
+| `program_data_ventilation_geo` | Amounts broken down by geographic level (provinces / national / central), with `montant_alloue = pct_affectation × montant_depense`, optionally joined with org-unit geometry |
+
+**Pipeline parameters:**
+
+- **Target PostgreSQL connection** (`target_connection`) — where the indicator tables are written. Empty = local workspace database.
+- **Attach organisation-unit geometry** (`attach_geometry`, default `true`) — join the geographic ventilation table with the org-unit geometry so the dashboard can render maps.
+- **Organisation units file** (`org_units_file`, default `geometries/org_units.parquet`) — pre-downloaded org-unit file containing the `coordinates` column used for the geometry join.
+
+> **Note**: If you only need a generic post-ingestion step (compute custom indicators, export to external systems, etc.), you can point this setting at any other pipeline code instead.
 
 ### 5.3 Webhook URLs (Core Pipelines)
 
